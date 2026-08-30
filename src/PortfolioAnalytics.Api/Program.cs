@@ -40,6 +40,7 @@ builder.Services.AddSingleton<LoginUserHandler>();
 builder.Services.AddSingleton<SyncMarketDataHandler>();
 builder.Services.AddSingleton<GetMarketDataBySymbolHandler>();
 builder.Services.AddSingleton<BacktestService>();
+builder.Services.AddSingleton<BacktestExecutionStore>();
 builder.Services.AddSingleton<RunBacktestHandler>();
 
 // JWT configuration: the API validates the token on every protected request.
