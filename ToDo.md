@@ -178,73 +178,6 @@ What is still not resolved in the functional base is:
 
 ## Notes
 
-This project is intended to be a useful financial analysis and strategy platform, not a disconnected architecture demo. The principle is to prioritize pragmatic, Domain-Driven Design (DDD) over theoretical over-engineering. confiabilidad del producto.- Mejoras futuras: pruebas end-to-end con cliente y pipeline CI/CD completo.
+This project is intended to be a useful financial analysis and strategy platform, not a disconnected architecture demo. The principle is to prioritize pragmatic, Domain-Driven Design (DDD) over theoretical over-engineering.
+ confiabilidad del producto.- Mejoras futuras: pruebas end-to-end con cliente y pipeline CI/CD completo.
 
-## P2 - Escala, robustez y producción
-
-### 16. Agregar observabilidad y logging estructurado
-- Objetivo: tener trazabilidad para fallos y ejecuciones pesadas.
-- Quién: backend / DevOps.
-- Cómo: logging estructurado, health checks, traces y métricas básicas.
-- Dónde: `src/PortfolioAnalytics.Api/` y `src/PortfolioAnalytics.Worker/`
-- Afecta: operabilidad en entorno real.
-- Mejoras futuras: OpenTelemetry, Prometheus y alertas inteligentes.
-
-### 17. Optimizar consultas de series temporales
-- Objetivo: manejar volumen grande de datos sin saturar memoria ni rendimiento.
-- Quién: infraestructura.
-- Cómo: usar Dapper para consultas pesadas, índices, particionado por fecha y stratégie de caching.
-- Dónde: `src/PortfolioAnalytics.Infrastructure/DataAccess/` y repositorios.
-- Afecta: rendimiento y escalabilidad.
-- Mejoras futuras: usar TimescaleDB o almacenamiento especializado para series temporales.
-
-### 18. Añadir autenticación avanzada y seguridad
-- Objetivo: preparar el producto para una base más segura.
-- Quién: backend.
-- Cómo: refresh tokens, expiración, revocación, validaciones más fuertes y políticas de contraseñas.
-- Dónde: `src/PortfolioAnalytics.Infrastructure/Identity/` y API.
-- Afecta: confianza del usuario y cumplimiento.
-- Mejoras futuras: 2FA, roles, permisos por portfolio y tenant-aware access.
-
-### 19. Preparar arquitectura para múltiples estrategias y fuentes de datos
-- Objetivo: hacer el sistema extensible.
-- Quién: backend.
-- Cómo: abstraer proveedores y definiciones de estrategia con interfaces y contratos.
-- Dónde: `src/PortfolioAnalytics.Contracts/` y `src/PortfolioAnalytics.Infrastructure/`
-- Afecta: extensibilidad del sistema.
-- Mejoras futuras: incorporar más fuentes de datos, estrategias personalizadas y benchmarking.
-
-### 20. Preparar despliegue y CI/CD
-- Objetivo: dejar una ruta de release clara.
-- Quién: DevOps + backend.
-- Cómo: pipeline de build, tests, linting, empaquetado y despliegue Docker.
-- Dónde: `.github/workflows/`, `docker/`, `docker-compose.yml`
-- Afecta: estabilidad y capacidad de entrega continua.
-- Mejoras futuras: ambientes de staging y producción, quality gates y rollout automatizado.
-
-## Criterio de priorización
-
-Se ordenan primero:
-- tareas que entregan valor funcional al usuario,
-- tareas que son viables dentro del MVP,
-- tareas que reducen riesgo técnico sin sobreconstruir.
-
-Se dejan para después:
-- mejoras de operación,
-- escalabilidad avanzada,
-- seguridad y extensibilidad por encima de un MVP probado.
-
-## Recomendación práctica
-
-Para mantener el proyecto útil y ejecutable, el orden sugerido es:
-1. dominio + estructura,
-2. auth,
-3. portfolios + positions,
-4. market data,
-5. backtest base,
-6. resultados + métricos,
-7. tests,
-8. dashboard,
-9. producción y escala.
-
-Esto permite empezar a entregar algo concreto sin perder de vista la arquitectura.
