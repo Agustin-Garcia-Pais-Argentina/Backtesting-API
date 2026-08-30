@@ -1,146 +1,184 @@
-# ToDo del MVP - PortfolioAnalytics API
+# MVP ToDo - PortfolioAnalytics API
 
-Este roadmap combina funcionalidad y factibilidad. La prioridad se ordena por valor para el usuario y por la capacidad de entregar algo útil sin sobreconstruir la base.
+This roadmap combines functionality and feasibility. Priority is ordered by value to the user and by the ability to deliver something useful without overbuilding the foundation.
 
-## Estado actual (Agosto 2026)
+## Current status (August 2026)
 
-La base del proyecto ya está funcional en varios bloques clave:
+The project foundation is already functional across several key blocks:
 
-- autenticación JWT y protección de endpoints,
-- registro/login de usuarios,
-- portfolio y positions con reglas basadas en el dominio,
-- market data MVP con consulta por símbolo y rango de fechas,
-- repositorio en memoria como capa de validación del flujo.
+- JWT authentication and endpoint protection,
+- user registration and login,
+- portfolio and position management with domain-based rules,
+- MVP market data support with symbol and date-range queries,
+- in-memory repositories as a validation layer for the workflow.
 
-Lo que todavía no está resuelto en la base funcional es:
-- backtesting real sobre series históricas,
-- métricas financieras reproducibles,
-- persistencia real en PostgreSQL,
-- tests automáticos de dominio e integración.
+What is still not resolved in the functional base is:
+- real backtesting over historical series,
+- reproducible financial metrics,
+- real persistence in PostgreSQL,
+- automated domain and integration tests.
 
-## P0 - Base del producto y lo que hace al MVP útil
+## P0 - Product foundation and what makes the MVP useful
 
-### 1. Definir el dominio financiero mínimo
-- Objetivo: dejar claro qué entidades y reglas de negocio son necesarias para un analizador de portafolios.
-- Quién: backend + arquitecto del producto.
-- Cómo: definir entidades como User, Portfolio, Position, MarketDataPoint, StrategyDefinition, BacktestRun y PerformanceMetrics.
-- Dónde: `src/PortfolioAnalytics.Domain/`
-- Afecta: todo el proyecto porque establece el modelo base.
-- Mejoras futuras: agregar Value Objects para Money, DateRange, StrategyParameters y reglas más estrictas de validación financiera.
+### 1. Define the minimum financial domain
+- Objective: clarify which entities and business rules are necessary for a portfolio analytics engine.
+- Owner: backend + product architect.
+- How: define entities such as User, Portfolio, Position, MarketDataPoint, StrategyDefinition, BacktestRun, and PerformanceMetrics.
+- Where: `src/PortfolioAnalytics.Domain/`
+- Impact: the entire project, because it establishes the base model.
+- Future improvements: add Value Objects for Money, DateRange, StrategyParameters, and stricter financial validation rules.
 
-### 2. Crear la estructura de solución y proyectos .NET
-- Objetivo: dejar el repositorio listo para escalar sin mezclar responsabilidades.
-- Quién: backend.
-- Cómo: crear proyectos `Domain`, `Application`, `Infrastructure`, `Api`, `Worker`, `Contracts`, `Shared` y `tests`.
-- Dónde: `src/` y `tests/`
-- Afecta: toda la organización del código y el flujo de compilación.
-- Mejoras futuras: separar paquetes por feature o by-context cuando el proyecto crezca y haya más especialización.
+### 2. Create the .NET solution and project structure
+- Objective: prepare the repository to scale without mixing responsibilities.
+- Owner: backend.
+- How: create projects such as `Domain`, `Application`, `Infrastructure`, `Api`, `Worker`, `Contracts`, `Shared`, and `tests`.
+- Where: `src/` and `tests/`
+- Impact: all code organization and build flow.
+- Future improvements: split packages by feature or by context as the project grows and becomes more specialized.
 
-### 3. Configurar PostgreSQL y entorno local con Docker
-- Objetivo: habilitar una base real para desarrollo y pruebas de integración.
-- Quién: backend / DevOps.
-- Cómo: definir `docker-compose.yml` con PostgreSQL y variables de entorno mínimas.
-- Dónde: raíz del proyecto y `docker/`
-- Afecta: desarrollo local, tests y despliegue.
-- Mejoras futuras: sumar Redis, pgAdmin, observabilidad y scripts de seed de datos.
+### 3. Configure PostgreSQL and the local environment with Docker
+- Objective: enable a real database for development and integration testing.
+- Owner: backend / DevOps.
+- How: define `docker-compose.yml` with PostgreSQL and minimal environment variables.
+- Where: project root and `docker/`
+- Impact: local development, tests, and deployment.
+- Future improvements: add Redis, pgAdmin, observability, and seed scripts.
 
-### 4. Implementar autenticación con JWT
-- Objetivo: proteger endpoints de usuarios, carteras y resultados.
-- Quién: backend.
-- Cómo: crear registro/login, generación de JWT, validación de claims y middleware de autenticación.
-- Dónde: `src/PortfolioAnalytics.Api/`, `src/PortfolioAnalytics.Infrastructure/Identity/`
-- Afecta: seguridad y acceso de los usuarios.
-- Mejoras futuras: refresh tokens, rotación de claves, roles y auditoría de sesiones.
+### 4. Implement JWT authentication
+- Objective: protect user, portfolio, and result endpoints.
+- Owner: backend.
+- How: build registration/login flow, JWT generation, claim validation, and authentication middleware.
+- Where: `src/PortfolioAnalytics.Api/`, `src/PortfolioAnalytics.Infrastructure/Identity/`
+- Impact: security and user access.
+- Future improvements: refresh tokens, key rotation, roles, and session auditing.
 
-### 5. Implementar CRUD de usuarios y portafolios
-- Objetivo: permitir que un usuario cree una cartera y la administre.
-- Quién: backend + API.
-- Cómo: crear endpoints de portfolio y validaciones de nombre, usuario y estado.
-- Dónde: `src/PortfolioAnalytics.Application/`, `src/PortfolioAnalytics.Api/Controllers/`
-- Afecta: el caso de uso central del producto.
-- Mejoras futuras: compartir carteras, permisos por usuario, tags de riesgo y snapshots de cartera.
+### 5. Implement CRUD for users and portfolios
+- Objective: allow a user to create and manage a portfolio.
+- Owner: backend + API.
+- How: create portfolio endpoints and validations for name, user, and status.
+- Where: `src/PortfolioAnalytics.Application/`, `src/PortfolioAnalytics.Api/Controllers/`
+- Impact: the core product use case.
+- Future improvements: portfolio sharing, per-user permissions, risk tags, and portfolio snapshots.
 
-### 6. Implementar posiciones dentro del portafolio
-- Objetivo: representar activos dentro de una cartera con cantidad y costo base.
-- Quién: dominio + aplicación.
-- Cómo: modelar `Position` y servicios para agregar, actualizar y eliminar posiciones.
-- Dónde: `src/PortfolioAnalytics.Domain/Entities/` y `src/PortfolioAnalytics.Application/`
-- Afecta: la funcionalidad financiera principal.
-- Mejoras futuras: soportar instrumentos complejos, lotes, costos de transacción y rebalancing automático.
+### 6. Implement positions inside the portfolio
+- Objective: represent assets within a portfolio with quantity and base cost.
+- Owner: domain + application.
+- How: model `Position` and build services to add, update, and remove positions.
+- Where: `src/PortfolioAnalytics.Domain/Entities/` and `src/PortfolioAnalytics.Application/`
+- Impact: the main financial functionality.
+- Future improvements: support complex instruments, lots, transaction cost handling, and automatic rebalancing.
 
-### 7. Implementar ingestión de datos históricos de mercado
-- Objetivo: poblar series temporales para volver comparables las estrategias.
-- Quién: aplicación + infraestructura.
-- Cómo: crear servicio de sincronización, normalización y deduplicación por símbolo + fecha + fuente.
-- Dónde: `src/PortfolioAnalytics.Infrastructure/ExternalServices/`, `src/PortfolioAnalytics.Application/`
-- Afecta: el backtest y la calidad de los resultados.
-- Mejoras futuras: soportar más proveedores, fallback de fuentes, validación de feriados y enriquecimiento de datos.
+### 7. Implement historical market data ingestion
+- Objective: populate time series to make strategies comparable.
+- Owner: application + infrastructure.
+- How: create sync, normalization, and deduplication flow by symbol + date + source.
+- Where: `src/PortfolioAnalytics.Infrastructure/ExternalServices/`, `src/PortfolioAnalytics.Application/`
+- Impact: backtesting and result quality.
+- Future improvements: support more providers, source fallback, holiday validation, and data enrichment.
 
-### 8. Crear la primera estrategia de backtest
-- Objetivo: demostrar valor real con una estrategia útil y validable.
-- Quién: dominio + aplicación.
-- Cómo: empezar con SMA crossover o buy-and-hold, con parámetros configurables.
-- Dónde: `src/PortfolioAnalytics.Domain/`, `src/PortfolioAnalytics.Application/Services/`, `src/PortfolioAnalytics.Worker/`
-- Afecta: la capacidad del sistema de entregar análisis de rendimiento.
-- Mejoras futuras: incluir estrategia de rebalanceo, momentum, mean-reversion, optimización de parámetros y backtest multi-asset.
+### 8. Create the first backtest strategy
+- Objective: demonstrate real value with a useful and testable strategy.
+- Owner: domain + application.
+- How: start with a simple SMA crossover or buy-and-hold strategy with configurable parameters.
+- Where: `src/PortfolioAnalytics.Domain/`, `src/PortfolioAnalytics.Application/Services/`, `src/PortfolioAnalytics.Worker/`
+- Impact: the system’s ability to deliver performance analysis.
+- Future improvements: include rebalancing strategies, momentum, mean reversion, parameter optimization, and multi-asset backtests.
 
-### 9. Ejecutar backtests en segundo plano
-- Objetivo: que la API no se bloquee cuando se corre un cálculo pesado.
-- Quién: backend + worker.
-- Cómo: un endpoint retorna 202 Accepted con un job ID y un worker procesa el cálculo.
-- Dónde: `src/PortfolioAnalytics.Api/`, `src/PortfolioAnalytics.Worker/`, `src/PortfolioAnalytics.Infrastructure/BackgroundJobs/`
-- Afecta: la experiencia de usuario y la escalabilidad de la API.
-- Mejoras futuras: cola de trabajos, retries, cancelación, event-driven processing y resultados en almacenamiento externo.
+### 9. Run backtests in the background
+- Objective: prevent the API from blocking when a heavy calculation is executed.
+- Owner: backend + worker.
+- How: an endpoint returns 202 Accepted with a job ID, and a worker processes the calculation.
+- Where: `src/PortfolioAnalytics.Api/`, `src/PortfolioAnalytics.Worker/`, `src/PortfolioAnalytics.Infrastructure/BackgroundJobs/`
+- Impact: user experience and API scalability.
+- Future improvements: job queues, retries, cancellation, event-driven processing, and external job storage.
 
-### 10. Guardar resultados de backtest y métricas clave
-- Objetivo: persistir los resultados para compararlos después.
-- Quién: infraestructura + aplicación.
-- Cómo: guardar resumen de la corrida, estrategia, parámetros y métricas calcularizadas.
-- Dónde: `src/PortfolioAnalytics.Domain/Entities/`, `src/PortfolioAnalytics.Infrastructure/Repositories/`
-- Afecta: la utilidad del producto porque permite comparar estrategias en el tiempo.
-- Mejoras futuras: guardar series de equity curve, trade log y snapshots por fecha.
+### 10. Save backtest results and key metrics
+- Objective: persist results for later comparison.
+- Owner: infrastructure + application.
+- How: store run summary, strategy, parameters, and calculated metrics.
+- Where: `src/PortfolioAnalytics.Domain/Entities/`, `src/PortfolioAnalytics.Infrastructure/Repositories/`
+- Impact: the usefulness of the product because it allows strategy comparison over time.
+- Future improvements: save equity curve series, trade logs, and date-based snapshots.
 
-### 11. Exponer endpoints REST del MVP
-- Objetivo: dejar las funcionalidades listas para un frontend o cliente consumidor.
-- Quién: API.
-- Cómo: endpoints para login, portfolio, market data y backtest status/results.
-- Dónde: `src/PortfolioAnalytics.Api/Controllers/`
-- Afecta: toda la experiencia de uso.
-- Mejoras futuras: versionado de API, paginación, filtros avanzados y contratos estables.
+### 11. Expose MVP REST endpoints
+- Objective: make features ready for a frontend or external consumer.
+- Owner: API.
+- How: build endpoints for login, portfolio, market data, and backtest status/results.
+- Where: `src/PortfolioAnalytics.Api/Controllers/`
+- Impact: the full usage experience.
+- Future improvements: API versioning, pagination, advanced filters, and stable contracts.
 
-## P1 - Mejora de valor y producto
+## P1 - Product value and feature improvement
 
-### 12. Mostrar métricas de rendimiento en un dashboard
-- Objetivo: que el usuario vea resultados comprensibles.
-- Quién: frontend + API + analytics.
-- Cómo: devolver summary metrics para que el cliente los represente en gráficos.
-- Dónde: `src/PortfolioAnalytics.Api/` y `client/`
-- Afecta: la adopción del producto y la toma de decisiones.
-- Mejoras futuras: comparativa por benchmark, heatmaps, equity curves, drawdown charts y export CSV/PDF.
+### 12. Show performance metrics in a dashboard
+- Objective: make results understandable to the user.
+- Owner: frontend + API + analytics.
+- How: return summary metrics so the client can render graphs.
+- Where: `src/PortfolioAnalytics.Api/` and `client/`
+- Impact: product adoption and decision-making.
+- Future improvements: benchmark comparisons, heatmaps, equity curves, drawdown charts, and CSV/PDF export.
 
-### 13. Comparar estrategias entre sí
-- Objetivo: permitir evaluar cuál estrategia funciona mejor en un mismo portafolio.
-- Quién: backend + frontend.
-- Cómo: guardar varias corridas y comparar sus métricas.
-- Dónde: `src/PortfolioAnalytics.Application/Queries/` y `src/PortfolioAnalytics.Api/`
-- Afecta: la utilidad analítica del producto.
-- Mejoras futuras: optimización automática de parámetros y rankings por métricas ponderadas.
+### 13. Compare strategies against each other
+- Objective: help users evaluate which strategy performs best on the same portfolio.
+- Owner: backend + frontend.
+- How: save several runs and compare their metrics.
+- Where: `src/PortfolioAnalytics.Application/Queries/` and `src/PortfolioAnalytics.Api/`
+- Impact: the analytical usefulness of the product.
+- Future improvements: automated parameter optimization and rankings by weighted metrics.
 
-### 14. Implementar tests unitarios del dominio y casos de uso
-- Objetivo: asegurar que las reglas del negocio se mantengan estables.
-- Quién: backend.
-- Cómo: usar xUnit/NUnit y pruebas para validación de portafolios, posiciones y métricas.
-- Dónde: `tests/PortfolioAnalytics.UnitTests/`
-- Afecta: calidad de la base y reducción de regresiones.
-- Mejoras futuras: tests de propiedad, golden files y fixtures con datasets reales.
+### 14. Implement unit tests for domain and use cases
+- Objective: keep business rules stable over time.
+- Owner: backend.
+- How: use xUnit/NUnit to validate portfolios, positions, and metrics.
+- Where: `tests/PortfolioAnalytics.UnitTests/`
+- Impact: base quality and regression reduction.
+- Future improvements: property-based tests, golden files, and fixtures with real datasets.
 
-### 15. Implementar pruebas de integración con PostgreSQL real
-- Objetivo: asegurar que la base, repositorios y API funcionan junto.
-- Quién: backend.
-- Cómo: usar Testcontainers para levantar PostgreSQL durante el CI.
-- Dónde: `tests/PortfolioAnalytics.IntegrationTests/`
-- Afecta: la confiabilidad del producto.
-- Mejoras futuras: pruebas end-to-end con cliente y pipeline CI/CD completo.
+### 15. Implement integration tests with real PostgreSQL
+- Objective: ensure the database, repositories, and API work together correctly.
+- Owner: backend.
+- How: use Testcontainers to spin up PostgreSQL during CI.
+- Where: `tests/PortfolioAnalytics.IntegrationTests/`
+- Impact: confidence in real deployment behavior.
+- Future improvements: end-to-end API validation and CI pipelines for migration checks.
+
+### 16. Improve deployment and environment readiness
+- Objective: move beyond local-only development.
+- Owner: backend + DevOps.
+- How: add configuration management, environment variables, Docker Compose, and CI workflows.
+- Where: root, `docker/`, and CI config.
+- Impact: operational stability and team usability.
+- Future improvements: production deployment strategy, health checks, and observability pipeline.
+
+## P2 - Scale and resilience
+
+### 17. Introduce asynchronous processing and queueing
+- Objective: support heavier workloads without blocking the API.
+- Owner: backend + worker.
+- How: standardize job execution and queue handling for slow calculations.
+- Where: worker, infrastructure, and background processing modules.
+- Impact: performance and scalability.
+- Future improvements: retries, dead-letter queues, job cancellation, and metrics collection.
+
+### 18. Add real market-data integrations
+- Objective: move from local test data to provider-backed market feeds.
+- Owner: infrastructure + application.
+- How: implement provider adapters and normalization layers for incoming market data.
+- Where: `src/PortfolioAnalytics.Infrastructure/ExternalServices/`
+- Impact: product realism and analytic quality.
+- Future improvements: multiple providers, backfills, and alerting for failed syncs.
+
+## Implementation guidance
+
+- Keep the MVP focus on real user value, not theoretical architecture.
+- Keep the domain model explicit and stable before adding complexity.
+- Make each step small enough to validate quickly.
+- Use tests as a safety net for critical financial rules.
+- Keep documentation aligned with the current state of the project as the code evolves.
+
+## Notes
+
+This project is intended to be a useful financial analysis and strategy platform, not a disconnected architecture demo. The principle is to prioritize pragmatic, Domain-Driven Design (DDD) over theoretical over-engineering. confiabilidad del producto.- Mejoras futuras: pruebas end-to-end con cliente y pipeline CI/CD completo.
 
 ## P2 - Escala, robustez y producción
 

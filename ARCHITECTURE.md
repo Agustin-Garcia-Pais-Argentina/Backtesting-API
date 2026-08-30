@@ -1,37 +1,37 @@
-# Architecture Overview
+﻿# Architecture overview
 
-Este documento funciona como registro vivo de la arquitectura del proyecto. Sirve para:
-- visualizar cómo está armada la solución,
-- entender qué hace cada capa,
-- registrar decisiones de diseño,
-- mantener una referencia educativa a medida que el proyecto avance.
+This document serves as the live record of the project architecture. It helps to:
+- visualize how the solution is assembled,
+- understand what each layer is responsible for,
+- record design decisions,
+- maintain an educational reference as the project evolves.
 
-Se recomienda actualizar este archivo cada vez que cambie la arquitectura principal, el flujo de funcionamiento o la estructura del sistema.
+This file should be updated whenever the main architecture, execution flow, or system structure changes.
 
-## 1. Propósito general del sistema
+## 1. General purpose of the system
 
-El proyecto busca convertirse en una API de análisis financiero y gestión de portafolios, orientada a:
-- gestionar usuarios,
-- crear y administrar carteras,
-- sincronizar datos de mercado,
-- evaluar estrategias de inversión con backtesting,
-- calcular métricas clave de rendimiento y riesgo,
-- exponer funcionalidad a un cliente frontend o a otros consumidores.
+The project aims to become a financial analysis and portfolio management API focused on:
+- managing users,
+- creating and maintaining portfolios,
+- synchronizing market data,
+- evaluating investment strategies through backtesting,
+- calculating key performance and risk metrics,
+- exposing functionality to a frontend client or other consumers.
 
-El enfoque principal del MVP es resolver un caso real y útil: 
-“un usuario puede gestionar una cartera, cargar datos de mercado y ejecutar simulaciones de estrategias sobre su portafolio”.
+The main MVP goal is to solve a real and useful case:
+"a user can manage a portfolio, load market data, and run strategy simulations against their portfolio."
 
-## 2. Arquitectura general
+## 2. General architecture
 
-La solución está pensada con una separación por capas para mantener claridad y permitir evolución sin mezclar responsabilidades.
+The solution is designed with separation by layers to keep the project clear and allow gradual evolution without mixing responsibilities.
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
 │                           Client / Consumers                         │
 │  Web app / Mobile app / External API consumer / Swagger UI         │
 └───────────────────────────────┬──────────────────────────────────────┘
-                                │ HTTP / REST
-                                ▼
+                                 │ HTTP / REST
+                                 ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │                         PortfolioAnalytics.Api                       │
 │ - Controllers                                                       │
@@ -40,8 +40,8 @@ La solución está pensada con una separación por capas para mantener claridad 
 │ - Dependency injection                                              │
 │ - Swagger / API surface                                              │
 └───────────────────────────────┬──────────────────────────────────────┘
-                                │ uses
-                                ▼
+                                 │ uses
+                                 ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │                    PortfolioAnalytics.Application                    │
 │ - Commands                                                          │
@@ -51,8 +51,8 @@ La solución está pensada con una separación por capas para mantener claridad 
 │ - Services                                                          │
 │ - Business flow orchestration                                       │
 └───────────────────────────────┬──────────────────────────────────────┘
-                                │ uses
-                                ▼
+                                 │ uses
+                                 ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │                     PortfolioAnalytics.Domain                        │
 │ - Entities                                                          │
@@ -62,8 +62,8 @@ La solución está pensada con una separación por capas para mantener claridad 
 │ - Business rules                                                    │
 │ - Exceptions                                                       │
 └───────────────────────────────┬──────────────────────────────────────┘
-                                │ implemented by
-                                ▼
+                                 │ implemented by
+                                 ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │                 PortfolioAnalytics.Infrastructure                    │
 │ - EF Core DbContext                                                 │
@@ -73,8 +73,8 @@ La solución está pensada con una separación por capas para mantener claridad 
 │ - JWT / auth implementations                                        │
 │ - Background jobs / worker integrations                             │
 └───────────────────────────────┬──────────────────────────────────────┘
-                                │ async jobs / integration
-                                ▼
+                                 │ async jobs / integration
+                                 ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │                       PortfolioAnalytics.Worker                     │
 │ - Heavy tasks                                                       │
@@ -83,19 +83,19 @@ La solución está pensada con una separación por capas para mantener claridad 
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-## 3. Qué hace cada parte
+## 3. What each layer does
 
 ### 3.1. Domain
-Es la capa más pura del proyecto. No conoce ASP.NET, EF Core ni la API.
+This is the purest layer in the project. It does not know about ASP.NET, EF Core, or the API.
 
-Responsabilidades:
-- definir entidades del negocio,
-- encapsular reglas de negocio simples,
-- dar estructura al dominio financiero,
-- definir contratos de repositorios,
-- mantener excepciones y validaciones de dominio.
+Responsibilities:
+- define business entities,
+- encapsulate core business rules,
+- give structure to the financial domain,
+- define repository contracts,
+- maintain domain exceptions and validations.
 
-Ejemplos actuales:
+Current examples:
 - `User`
 - `Portfolio`
 - `Position`
@@ -105,264 +105,141 @@ Ejemplos actuales:
 - `PerformanceMetrics`
 
 ### 3.2. Application
-Es la capa de casos de uso.
+This is the use-case layer.
 
-Responsabilidades:
-- ejecutar acciones del producto,
-- preparar comandos y consultas,
-- orquestar validaciones y llamadas a servicios,
-- coordinar la lógica de negocio que no pertenece a una entidad aislada,
-- preparar DTOs para la capa API.
+Responsibilities:
+- execute product actions,
+- prepare commands and queries,
+- orchestrate validation and service calls,
+- coordinate business logic that does not belong to a single isolated entity,
+- prepare DTOs for the API layer.
 
-Ejemplos aproximados:
+Representative examples:
 - `CreatePortfolioCommand`
 - `AddPositionCommand`
 - `RunBacktestCommand`
 - `GetPortfolioSummaryQuery`
 - `CreatePortfolioHandler`
 
+This layer follows a CQRS-oriented structure, separating commands from queries and keeping handlers focused on a single use case.
+
 ### 3.3. Infrastructure
-Es la capa de implementación técnica.
+This is the technical implementation layer.
 
-Responsabilidades:
-- persistencia con EF Core,
-- repositorios concretos,
-- acceso a fuentes externas de mercado,
-- JWT o seguridad técnica,
-- job processing y tareas pesadas,
-- cualquier dependencia externa.
+Responsibilities:
+- persistence with EF Core,
+- concrete repositories,
+- access to external market data sources,
+- JWT or technical security,
+- job processing and heavy tasks,
+- any external dependency.
 
-Ejemplos:
+Examples:
 - `AppDbContext`
 - `PortfolioRepository`
 - `MarketDataRepository`
 - `YahooFinanceClient`
 - `JwtTokenService`
 
-### 3.4. Api
-Es la capa de exposición de funcionalidad.
+The persistence design follows the Repository Pattern, abstracted for upcoming PostgreSQL/EF Core integration while remaining in-memory for the current MVP.
 
-Responsabilidades:
-- recibir HTTP requests,
-- mapear DTOs,
-- invocar casos de uso,
-- devolver respuestas estándar,
-- manejar errores globalmente,
-- documentar endpoints con Swagger.
+### 3.4. API
+This is the HTTP exposure layer.
 
-No debería contener lógica de negocio compleja; solo orquesta.
+Responsibilities:
+- receive REST requests,
+- map input and output DTOs,
+- call the application layer,
+- handle transport-level errors,
+- expose Swagger and minimal API documentation.
+
+Examples:
+- `AuthController`
+- `PortfoliosController`
+- `MarketDataController`
+- `BacktestsController`
 
 ### 3.5. Worker
-Es la capa para trabajos pesados y asíncronos.
+This is the layer for heavy processing and asynchronous tasks.
 
-Responsabilidades:
-- ejecutar backtests complejos,
-- cargar datos masivos,
-- correr tareas en background,
-- no bloquear la API principal.
+Responsibilities:
+- execute heavy backtests,
+- synchronize market data sources,
+- keep long-running work outside the request thread,
+- avoid blocking the API.
 
-Esto ayuda a mantener la API reactiva y a facilitar escalado cuando la carga crece.
+## 4. Design principles
 
-## 4. Flujo principal del MVP
+### 4.1. Separation of responsibilities
+Each layer has a clear purpose and does not mix with another.
 
-### 4.1. Flujo de usuario y portafolio
-```text
-Usuario -> API -> Application -> Domain -> Repository -> PostgreSQL
-```
+### 4.2. Pure domain
+The domain is the business reference. It does not need to know whether there is a web API, a database, or HTTP.
 
-Ejemplo:
-- usuario crea un portfolio,
-- controldor recibe request,
-- handler valida,
-- domain crea la entidad,
-- repositorio la persiste,
-- response vuelve al cliente.
+### 4.3. Repositories over persistence details
+The infrastructure layer implements repositories; the application layer does not depend on how data is stored.
 
-### 4.2. Flujo de sincronización de datos de mercado
-```text
-API -> Application -> Infrastructure Repository -> In-memory store
-```
+### 4.4. Explicit messages and invariants
+Commands, queries, and entities express the business in a visible and verifiable way.
 
-Objetivo:
-- recibir una carga de precios históricos,
-- validarlos con el dominio,
-- guardar la serie para análisis posterior,
-- dejar la estructura lista para cambiar a una fuente persistente real en el futuro.
+## 5. Current functional flow
 
-En la versión actual, la infraestructura usa un repositorio en memoria para validar el flujo sin bloquear el MVP por una base de datos completa.
+### 5.1. Registration and login
+- The user sends email, name, and password.
+- The application validates input and hashes the password.
+- A JWT is issued for the session.
 
-### 4.3. Flujo de backtesting
-```text
-API -> Application -> Worker -> Strategy engine -> Market data -> Metrics -> Persist result
-```
+### 5.2. Portfolio management
+- The user creates a portfolio through the API.
+- The use case validates the name, owner, and operation integrity.
+- The application layer coordinates with the repository and infrastructure.
 
-Objetivo:
-- tomar una estrategia de inversión,
-- simular rendimiento sobre un historial,
-- calcular métricas relevantes,
-- guardar el resultado y permitir comparación posterior.
+### 5.3. Position management
+- The user adds a position with symbol, quantity, and value.
+- The `Portfolio` entity validates that there are no duplicate symbols.
+- The operation is persisted by the current in-memory repository.
 
-## 5. Entidades principales del dominio
+### 5.4. Market data
+- A market-price series is synchronized with date and symbol.
+- Duplicate records are deduplicated by a functional key.
+- The system can query a date window by symbol.
 
-### User
-Representa a un usuario autenticado.
+## 6. Current architecture state
 
-Atributos clave:
-- Id
-- Email
-- FullName
-- CreatedAt
+The project already has a useful MVP foundation:
+- JWT for authentication,
+- repository for users,
+- repository for portfolios,
+- repository for market data,
+- token-protected API,
+- use cases encapsulated by handlers.
 
-### Portfolio
-Representa una cartera del usuario.
+The current persistence layer is in-memory by design and is intentionally set to evolve toward PostgreSQL + EF Core later.
 
-Atributos clave:
-- Id
-- UserId
-- Name
-- Positions
+## 7. Relevant design decisions
 
-### Position
-Representa un activo dentro de una cartera.
+### Repository pattern
+The infrastructure layer defines repository abstractions so the application does not depend on a concrete storage implementation.
 
-Atributos clave:
-- Symbol
-- Quantity
-- AverageCost
-- AssetType
+### CQRS-oriented application layer
+The application organizes logic into commands, queries, and handlers. This keeps reading and writing separate, preserves clarity, and prepares the codebase for growth without mixing responsibilities.
 
-### MarketDataPoint
-Representa un punto de precio histórico.
+### Domain first
+The most important rules live in entities and domain validations before they appear in controllers or infrastructure services.
 
-Atributos clave:
-- Symbol
-- Date
-- Open
-- High
-- Low
-- Close
-- Volume
-- Source
+## 8. Evolution path
 
-### StrategyDefinition
-Representa una estrategia de inversión.
+The next maturity step for the project points toward:
+- real PostgreSQL storage,
+- formal backtesting,
+- deterministic and reproducible metrics,
+- more integration tests,
+- stronger separation between jobs and API request flow.
 
-Atributos clave:
-- Name
-- Type
-- ParametersJson
+The goal is to keep the MVP simple while the solution grows without losing clarity or traceability.
 
-### BacktestRun
-Representa una corrida de backtesting.
+## 9. Final notes
 
-Atributos clave:
-- UserId
-- PortfolioId
-- StrategyId
-- Status
-- StartedAt
-- FinishedAt
-- ResultSummaryJson
+This document should stay up to date as the solution evolves. The architecture should reflect the real state of the project rather than an idealized future version.
 
-### PerformanceMetrics
-Representa el resultado cuantitativo del backtest.
-
-Atributos clave:
-- TotalReturn
-- AnnualizedReturn
-- MaxDrawdown
-- SharpeRatio
-- Volatility
-- TradeCount
-
-## 6. Decisiones de diseño actuales
-
-### Separación por capas
-Se usa para aumentar claridad y mantener una base sostenible.
-
-### Dominio claro
-El modelo financiero se define en Domain para que las entidades no dependan del framework ni de la infraestructura.
-
-### Worker dedicado para backtests
-La lógica pesada se mueve a una capa independiente para no bloquear la API.
-
-### PostgreSQL como base principal
-Es una base sólida para persistir usuarios, portafolios, series históricas y resultados.
-
-### Enfoque MVP
-El sistema se diseña para resolver un caso práctico, no para ser una plataforma financiera “perfecta” desde el inicio.
-
-## 7. Qué no queremos en esta fase
-
-- mezclar lógica de negocio en controladores,
-- poner EF Core, HTTP y JWT en el dominio,
-- overengineering con CQRS completo sin necesidad,
-- hacer múltiples proveedores externos antes de validar el MVP,
-- usar workers sin una tarea realmente demandante,
-- construir un frontend complejo antes de validar el backend y las métricas.
-
-## 8. Cómo evoluciona la arquitectura
-
-A medida que el proyecto crezca, esta arquitectura puede evolucionar hacia:
-- más servicios dedicados,
-- queries optimizadas con Dapper,
-- más pruebas de integración,
-- mejor observabilidad,
-- worker más robusto,
-- mayor separación entre estrategia y análisis financiero,
-- dashboard y comparación de resultados.
-
-Sin embargo, en el MVP la prioridad es mantener la solución simple, entendible y útil.
-
-## 9. Estado actual del proyecto
-
-Actualmente la solución ya está creada con la estructura base, un dominio claro y una primera capa funcional de negocio. El proyecto ya incluye:
-
-- autenticación de usuarios con JWT,
-- registro y login,
-- API protegida por token,
-- portfolios y posiciones con reglas básicas de dominio,
-- market data MVP con repositorio en memoria,
-- endpoints para sincronizar y consultar series históricas por símbolo.
-
-Esto quiere decir que, a nivel de arquitectura, el sistema ya validó el flujo principal de usuario + portfolio + market data en local, aunque todavía no se ha incorporado la persistencia definitiva en PostgreSQL ni el motor de backtesting real.
-
-Las próximas áreas a completar son:
-- backtest runner base,
-- cálculo de métricas financieras reproducibles,
-- tests automáticos del dominio y de integración,
-- persistencia real en PostgreSQL y migraciones,
-- separación de jobs pesados en worker.
-
-## 10. Cómo actualizar este documento
-
-Cada vez que ocurra uno de estos cambios, este archivo debe actualizarse:
-- se agrega una nueva capa o servicio importante,
-- cambia el flujo de trabajo principal,
-- se introduce un nuevo motor de tareas,
-- cambia la infraestructura de persistencia,
-- se incorpora una nueva funcionalidad clave del producto.
-
-Formato recomendado del update:
-- describir el cambio,
-- indicar por qué se hizo,
-- mostrar la nueva estructura del flujo,
-- explicar impacto sobre dominio / infraestructura / API.
-
-## 11. Registro educativo
-
-Este archivo sirve además como documento pedagógico para entender:
-- cómo se separan responsabilidades en una solución .NET,
-- cómo la arquitectura guía el desarrollo,
-- qué ventajas tiene mantener capas claras,
-- cómo evoluciona una idea de producto hacia un sistema más robusto.
-
-## 12. Resumen corto
-
-La arquitectura del proyecto intenta ser:
-- simple,
-- útil,
-- extensible,
-- y centrada en el problema de negocio real: análisis financiero y backtesting de estrategias.
-
-La idea central es que cada capa tenga una misión clara, sin mezclar lógica técnica con lógica de negocio ni dejar la API como contenedor de todo.
+This project is focused on pragmatic, Domain-Driven Design (DDD) over theoretical over-engineering.

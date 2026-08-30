@@ -4,159 +4,159 @@
 ![.NET](https://img.shields.io/badge/.NET-8-512BD4)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-PortfolioAnalytics API es un backend de análisis financiero y gestión de carteras pensado para ser útil desde el primer paso. El proyecto combina autenticación, portafolios, posiciones y datos de mercado en una API REST que puede servir como base para backtesting, métricas y automatización de decisiones financieras.
+PortfolioAnalytics API is a financial analytics and portfolio management backend designed to be useful from the first iteration. The project combines authentication, portfolio tracking, position management, and market data access in a REST API that can serve as the foundation for backtesting, financial metrics, and decision automation.
 
-## Arquitectura
+## Architecture
 
 ```mermaid
 flowchart LR
-    A[Usuarios] --> B[API REST]
+    A[Users] --> B[REST API]
     B --> C[Application Layer]
     C --> D[Domain]
     C --> E[Infrastructure]
-    E --> F[Repositorios en memoria / futuras persistencias]
+    E --> F[In-memory repositories / future persistence]
     E --> G[JWT / Identity]
     E --> H[Market Data]
     B --> I[Portfolio + Positions + Metrics]
 ```
 
-La solución está organizada por capas:
+The solution is organized into layers:
 
-- `PortfolioAnalytics.Domain`: entidades, reglas de negocio y validaciones del dominio.
-- `PortfolioAnalytics.Application`: handlers, commands, queries, DTOs y casos de uso.
-- `PortfolioAnalytics.Infrastructure`: repositorios, autenticación, hashing y servicios de infraestructura.
-- `PortfolioAnalytics.Api`: controladores, configuración HTTP y composición de dependencias.
-- `tests`: validación de reglas y flujos principales.
+- `PortfolioAnalytics.Domain`: entities, business rules, and domain validation.
+- `PortfolioAnalytics.Application`: handlers, commands, queries, DTOs, and use-case orchestration.
+- `PortfolioAnalytics.Infrastructure`: repositories, authentication, hashing, and supporting infrastructure.
+- `PortfolioAnalytics.Api`: HTTP controllers, dependency wiring, and API surface.
+- `tests`: validation of core business rules and MVP flows.
 
-## ¿Qué problema resuelve?
+## What problem does it solve?
 
-La mayoría de los escenarios financieros se desarrollan en scripts locales, con lógica dispersa y poca trazabilidad. Este proyecto busca centralizar la base del dominio financiero en una API pequeña pero real, con reglas claras y una estructura que permite crecer sin perder mantenibilidad.
+Most financial workflows begin as local scripts with fragmented logic and poor traceability. This project centralizes the core of financial domain logic in a small but credible API, using clear rules and a structure that can evolve without losing maintainability.
 
-## ¿Qué hace?
+## What it does
 
-- Registra e identifica usuarios.
-- Emite y valida JWT para proteger accessos.
-- Crea y gestiona carteras de inversión.
-- Agrega posiciones por símbolo y tipo de activo.
-- Sincroniza series históricas de mercado.
-- Expone endpoints HTTP para consumo por frontend o integraciones.
-- Sirve como base para backtesting y cálculo de métricas.
+- Registers and identifies users.
+- Issues and validates JWT tokens to protect access.
+- Creates and manages investment portfolios.
+- Adds positions by symbol and asset type.
+- Syncs historical market series.
+- Exposes HTTP endpoints for frontend and integration consumers.
+- Provides a foundation for backtesting and metric calculation.
 
-## Aspectos ingenieriles
+## Engineering considerations
 
-### Integridad del dominio
+### Domain integrity
 
-Las reglas clave viven en el dominio. Por ejemplo, no se permite duplicar un símbolo dentro del mismo portfolio, y los puntos de mercado validan su estructura antes de ser persistidos. Esto ayuda a evitar errores de negocio muy costosos.
+The core rules live in the domain layer. For example, duplicate symbols within the same portfolio are rejected, and market data points validate their structure before they are persisted. This helps prevent high-impact business errors.
 
-### Autenticación simple y segura
+### Simple and secure authentication
 
-La API usa JWT para proteger endpoints de usuario y cartera. La idea es que la autenticación sea clara, útil para un MVP y fácil de reemplazar más adelante por una solución con base de datos real.
+The API uses JWT to protect user and portfolio endpoints. The goal is to keep authentication straightforward, useful for an MVP, and easy to replace later with a more durable persistence-backed solution.
 
-### Arquitectura limpia
+### Clean architecture
 
-Se separan responsabilidades para mantener el proyecto entendible:
+Responsibilities are separated to keep the project understandable:
 
-- la API no toma decisiones de negocio,
-- el dominio no conoce HTTP ni EF Core,
-- la infraestructura encapsula la implementación concreta.
+- the API does not own business logic,
+- the domain does not know about HTTP or EF Core,
+- infrastructure encapsulates the concrete implementation details.
 
-Esto reduce acoplamientos y hace más fácil probar cada capa.
+This reduces coupling and makes it easier to test each layer.
 
-## Stack tecnológico
+## Technology stack
 
 - C# / .NET 8
 - ASP.NET Core Web API
-- xUnit para tests
-- JWT para autenticación
-- BCrypt para hashing de contraseñas
-- InMemory repositories para validación local y MVP
-- Docker para entorno y despliegue local
+- xUnit for tests
+- JWT for authentication
+- BCrypt for password hashing
+- Repository Pattern (Abstracted for upcoming PostgreSQL/EF Core integration, currently in-memory for MVP)
+- Docker for local environment and deployment support
 
-## Cómo utilizar
+## How to use it
 
-1. Clonar el repositorio:
+1. Clone the repository:
 
 ```bash
-git clone https://github.com/tu-usuario/PortfolioAnalytics.git
+git clone https://github.com/your-user/PortfolioAnalytics.git
 cd PortfolioAnalytics
 ```
 
-2. Restaurar dependencias:
+2. Restore dependencies:
 
 ```bash
 dotnet restore
 ```
 
-3. Ejecutar la API:
+3. Run the API:
 
 ```bash
 dotnet run --project src/PortfolioAnalytics.Api
 ```
 
-4. La API queda disponible localmente en:
+4. The API is available locally at:
 
 ```text
 https://localhost:5001
 http://localhost:5000
 ```
 
-5. Usar JWT en los endpoints protegidos. El flujo actual incluye registro, login y acceso a portfolios.
+5. Use JWT on protected endpoints. The current flow includes registration, login, and access to portfolios.
 
-## Flujo principal del MVP
+## MVP flow
 
-### 1. Registro y autenticación
-- El usuario se registra con email, nombre y contraseña.
-- La contraseña se hashea antes de guardarse.
-- El sistema genera un token JWT para acceso futuro.
+### 1. Registration and authentication
+- A user signs up with an email, full name, and password.
+- The password is hashed before storage.
+- The system emits a JWT for future access.
 
-### 2. Portfolio y posiciones
-- El usuario crea un portfolio.
-- Agrega posiciones por símbolo, cantidad y precio.
-- El sistema valida que no existan duplicados por símbolo.
+### 2. Portfolio and positions
+- The user creates a portfolio.
+- Adds positions by symbol, quantity, and price.
+- The system rejects duplicate symbols at the portfolio level.
 
 ### 3. Market data
-- Se cargan puntos de mercado con fecha, precio de apertura, máximo, mínimo, cierre y volumen.
-- Se usan para alimentar análisis y futuras métricas.
+- Market data points are loaded with date, opening price, high, low, close, and volume.
+- The data supports later analysis and metric calculations.
 
 ## Roadmap
 
-La hoja de ruta del proyecto vive en [ToDo.md](./ToDo.md).
+The project roadmap lives in [ToDo.md](./ToDo.md).
 
-### Fase 1: MVP funcional
-- autenticación JWT
-- gestión de portfolios y posiciones
-- sincronización de market data
-- validación de reglas del dominio
-- tests unitarios de flujo crítico
+### Phase 1: Functional MVP
+- JWT authentication
+- portfolio and position management
+- market data synchronization
+- domain rule validation
+- unit tests for critical flows
 
-### Fase 2: analítica financiera
-- backtesting base
-- cálculo de métricas como retorno, drawdown y Sharpe
-- comparación de estrategias
-- almacenamiento persistente real
+### Phase 2: Financial analytics
+- base backtesting engine
+- calculation of metrics such as return, drawdown, and Sharpe
+- strategy comparison
+- real persistent storage
 
-### Fase 3: madurez
+### Phase 3: Maturity
 - PostgreSQL + EF Core
-- integraciones reales con fuentes de precios
-- tests de integración
-- observabilidad y despliegue
+- real market data provider integrations
+- integration tests
+- observability and deployment readiness
 
-## Estado actual
+## Current status
 
-El proyecto ya tiene una base funcional útil para un MVP:
+The project already has a useful functional base for an MVP:
 
-- usuarios con autenticación y JWT,
-- portfolio y posiciones,
-- API protegida,
-- market data en memoria,
-- tests unitarios para las reglas más valiosas.
+- users with JWT authentication,
+- portfolio and position management,
+- protected API access,
+- in-memory market data support,
+- unit tests for the most valuable rules.
 
-Todavía no es una plataforma de producción final, pero sí es una base real, sólida y práctica para seguir construyendo.
+It is not a final production platform yet, but it is a real, solid foundation for continued development.
 
-## Contribuir
+## Contributing
 
-Las contribuciones se priorizan por valor funcional y claridad técnica. La idea es seguir una evolución honesta del proyecto, sin agregar capas innecesarias ni peleas de arquitectura sin necesidad.
+Contributions are prioritized by functional value and technical clarity. The goal is to keep the project honest and incremental, without adding unnecessary layers or theoretical overengineering.
 
-## Notas
+## Notes
 
-Este proyecto está pensado como una pieza útil para análisis financiero y estrategia de inversión, no como un demo de arquitectura sin valor operativo. La prioridad es construir algo que sirva, se pueda entender y pueda crecer de forma sostenible.
+This project is designed as a useful foundation for financial analysis and investment strategy, not as a disconnected architecture demo. The focus is on pragmatic, Domain-Driven Design (DDD) over theoretical over-engineering.

@@ -1,152 +1,152 @@
 # AGENTS.md
 
-Este archivo define las reglas para la planificación y la creación de código en este proyecto.
+This file defines the rules for planning and code creation in this project.
 
-## 1. Propósito general del proyecto
+## 1. General project purpose
 
-Este repositorio está orientado a construir un MVP útil para análisis financiero y gestión de portafolios, con foco en:
-- gestión de usuarios,
-- gestión de carteras y posiciones,
-- sincronización de datos de mercado,
-- ejecución de backtests,
-- cálculo de métricas financieras relevantes,
-- API REST para un cliente frontend.
+This repository is focused on building a useful MVP for financial analysis and portfolio management, with emphasis on:
+- user management,
+- portfolio and position management,
+- market data synchronization,
+- backtesting execution,
+- calculation of relevant financial metrics,
+- REST API exposure for a frontend client.
 
-La prioridad no es “hacer una arquitectura compleja”, sino entregar un producto útil, mantenible y verificable.
+The priority is not to build a complex architecture, but to deliver a useful, maintainable, and verifiable product.
 
-## 2. Reglas de planificación
+## 2. Planning rules
 
-### 2.1. Priorizar utilidad antes que estética arquitectónica
-- Antes de implementar, responder: ¿esto aporta valor funcional real al usuario?
-- No agregar capas, patrones o abstracciones sin necesidad concreta.
-- Evitar “demo architecture” que no resuelva problema real.
+### 2.1. Prioritize utility over architectural aesthetics
+- Before implementing, ask: does this add real functional value to the user?
+- Do not add layers, patterns, or abstractions without a concrete need.
+- Avoid "demo architecture" that does not solve a real problem.
 
-### 2.2. Mantener el alcance del MVP claro
-- El proyecto debe avanzar en etapas.
-- Cada cambio debe encajar con un caso de uso real del MVP.
-- Si una funcionalidad no es necesaria para el MVP, debe dejarse documentada como mejora futura.
+### 2.2. Keep the MVP scope clear
+- The project must advance in stages.
+- Each change should fit an actual MVP use case.
+- If a feature is not required for the MVP, it should be documented as a future improvement.
 
-### 2.3. Resolver primero lo que genera valor inmediato
-El orden recomendado es:
-1. dominio base,
-2. autenticación,
-3. portfolio + posiciones,
+### 2.3. Solve what creates immediate value first
+The recommended order is:
+1. base domain,
+2. authentication,
+3. portfolio + positions,
 4. market data,
-5. backtest base,
-6. resultados y métricas,
+5. base backtesting,
+6. results and metrics,
 7. tests,
 8. dashboard,
-9. producción y escalado.
+9. production and scaling.
 
-### 2.4. Hacer planes pequeños y ejecutables
-- Dividir tareas en pasos concretos y verificables.
-- Cada cambio debe poder explicarse en pocas frases: objetivo, alcance, archivos involucrados, validación.
-- No crear tareas demasiado grandes o demasiado abstractas.
+### 2.4. Keep plans small and executable
+- Split tasks into concrete and verifiable steps.
+- Each change should be explainable in a few phrases: objective, scope, files involved, validation.
+- Do not create tasks that are too large or too abstract.
 
-### 2.5. Pedir aclaración cuando la decisión afecta el producto
-- En caso de duda sobre alcance, UX, reglas financieras o arquitectura, pedir una decisión antes de implementar.
-- Si hay más de una opción razonable, elegir la más simple y útil para el MVP.
+### 2.5. Ask for clarification when a decision affects the product
+- If there is uncertainty about scope, UX, financial rules, or architecture, ask before implementing.
+- When more than one option is reasonable, choose the simplest and most useful one for the MVP.
 
-## 3. Reglas de desarrollo
+## 3. Development rules
 
-### 3.1. Respetar la arquitectura por capas
-- `Domain`: entidades, value objects, interfaces de repositorio, reglas de negocio puras.
-- `Application`: casos de uso, commands, queries, handlers, validaciones y DTOs.
-- `Infrastructure`: EF Core, repositorios, clientes HTTP, jobs, autenticación técnica.
-- `Api`: controladores, middleware, Swagger, exposición REST.
-- `Worker`: tareas pesadas y asíncronas.
-- `Shared` y `Contracts`: utilidades y contratos compartidos.
+### 3.1. Respect the layered architecture
+- `Domain`: entities, value objects, repository interfaces, and pure business logic.
+- `Application`: use cases, commands, queries, handlers, validation, and DTOs.
+- `Infrastructure`: EF Core, repositories, HTTP clients, jobs, and technical authentication.
+- `Api`: controllers, middleware, Swagger, and REST exposure.
+- `Worker`: heavy asynchronous tasks.
+- `Shared` and `Contracts`: shared utilities and contracts.
 
-### 3.2. No mezclar responsabilidades
-- La API no debe contener lógica de negocio real.
-- El dominio no debe depender de EF Core, ASP.NET ni de infraestructura.
-- La infraestructura no debe decidir reglas clave del negocio.
+### 3.2. Do not mix responsibilities
+- The API should not contain real business logic.
+- The domain must not depend on EF Core, ASP.NET, or infrastructure.
+- Infrastructure should not decide core business rules.
 
-### 3.3. Preferir claridad sobre sofisticación
-- Naming simple, directo y consistente.
-- Evitar overengineering por “patrones bonitos”.
-- Priorizar mantenibilidad y legibilidad.
+### 3.3. Prefer clarity over sophistication
+- Use simple, direct, and consistent naming.
+- Avoid overengineering with "pretty patterns".
+- Prioritize maintainability and readability.
 
-### 3.4. Mantener el software testeable
-- Cada funcionalidad principal debe poder validarse con pruebas unitarias o de integración.
-- No dejar lógica crítica sin pruebas.
-- Evitar acoplar el código a pruebas, pero sí diseñarlo para que pueda probarse.
+### 3.4. Keep the software testable
+- Each major feature should be validated with unit or integration tests.
+- Do not leave critical logic untested.
+- Avoid coupling the code to tests, but design it so it can be tested.
 
-### 3.5. Usar tecnología apropiada al problema
-- .NET + ASP.NET Core + PostgreSQL + EF Core es la base recomendada.
-- Dapper solo si la consulta masiva de series temporales lo exige.
-- CQRS solo si se justifica por complejidad real.
-- Worker solo si hay tareas pesadas y asíncronas reales.
+### 3.5. Use the right technology for the problem
+- .NET + ASP.NET Core + PostgreSQL + EF Core is the recommended base.
+- Use Dapper only when massive time-series queries truly require it.
+- Apply CQRS only when real complexity justifies it.
+- Use a worker only for actual heavy asynchronous tasks.
 
-### 3.6 Comentar el codigo correctamente
-- Comentar por bloques de codigo, su objetivo y como lo logran. De manera tecnica pero simple.
-- Comentar al inicio de cada archivo el fin del mismo de manera coloquial.
-- Mantener la documentación actualizada cuando un cambio importante de arquitectura o flujo cambia el contexto del proyecto.
+### 3.6. Comment the code properly
+- Add comments at code-block level, explaining purpose and how it works in a simple technical style.
+- Add a brief file-level description at the top of each file explaining its purpose.
+- Keep documentation current whenever an important architectural or workflow change alters project context.
 
-## 4. Reglas de código
+## 4. Code rules
 
-### 4.1. Mejoras mínimas y precisas
-- Hacer cambios pequeños y directos.
-- No reescribir áreas completas si no es necesario.
-- No resolver problemas no relacionados con la tarea actual.
+### 4.1. Keep improvements minimal and precise
+- Make small, direct changes.
+- Do not rewrite large sections unless necessary.
+- Do not solve unrelated problems while working on the current task.
 
-### 4.2. Mantener consistencia del proyecto
-- Archivos, carpetas y nombres deben seguir este estilo:
-  - PascalCase para clases, enums y métodos públicos,
-  - camelCase para variables y parámetros,
-  - carpetas con nombres descriptivos y en inglés,
-  - `PortfolioAnalytics.` como prefijo del nombre del proyecto y subproyectos.
+### 4.2. Maintain project consistency
+- Files, folders, and names should follow this style:
+  - PascalCase for classes, enums, and public methods,
+  - camelCase for variables and parameters,
+  - descriptive English folder names,
+  - `PortfolioAnalytics.` as the project and subproject prefix.
 
-### 4.3. No sobre-documentar el código
-- Comentarios solo cuando realicen una aclaración técnica valiosa.
-- Preferir nombres expresivos a comentarios excesivos.
+### 4.3. Do not over-document the code
+- Comments should only add real technical clarification.
+- Prefer expressive names over excessive comments.
 
-### 4.4. No dejar código provisional en producción
-- No dejar `TODO` sin contexto serio.
-- No dejar placeholders de negocio sin resolver.
-- No dejar logs ruidosos ni debugging cruft.
+### 4.4. Do not leave provisional code in production
+- Do not leave `TODO` items without serious context.
+- Do not leave unresolved business placeholders.
+- Do not leave noisy logs or debugging cruft.
 
-### 4.5. Reglas de validación antes de cerrar una tarea
-- Verificar compilación si aplica.
-- Ejecutar la prueba más pequeña que cubra el cambio.
-- Si el cambio afecta API, validar el flujo relevante.
-- Si el cambio afecta negocio financiero, revisar la lógica de cálculo cuidadosamente.
+### 4.5. Validation rules before closing a task
+- Verify compilation when applicable.
+- Run the smallest relevant test that covers the change.
+- If the change affects the API, validate the relevant flow.
+- If the change affects financial logic, review the calculation carefully.
 
-## 5. Reglas específicas del dominio financiero
+## 5. Financial domain-specific rules
 
-- Las métricas deben ser consistentes y reproducibles.
-- Las series temporales deben normalizarse antes de cálculo.
-- La deduplicación por símbolo + fecha + fuente debe ser tenida en cuenta.
-- Los backtests deben ser reproducibles en función de los parámetros usados.
-- Los cálculos financieros deben priorizar claridad sobre “magia matemática”.
+- Metrics must be consistent and reproducible.
+- Time series should be normalized before calculation.
+- Deduplication by symbol + date + source must be considered.
+- Backtests must be reproducible based on the parameters used.
+- Financial calculations should prioritize clarity over "mathematical magic".
 
-## 6. Reglas para decisiones de implementación
+## 6. Rules for implementation decisions
 
-### Si hay duda entre dos caminos:
-- elegir la solución más simple,
-- que resuelva el problema sin introducir complejidad innecesaria,
-- y que permita avanzar al siguiente paso del MVP.
+### If there is doubt between two paths:
+- choose the simplest solution,
+- choose the one that solves the problem without unnecessary complexity,
+- and choose the one that allows progress to the next MVP step.
 
-### Si una funcionalidad puede esperar:
-- dejarla en el backlog como mejora futura,
-- no bloquear el MVP con ella.
+### If a feature can wait:
+- leave it in the backlog as a future improvement,
+- do not block the MVP with it.
 
-## 7. Reglas de comunicación en el proyecto
+## 7. Communication rules in the project
 
-- Explicar el porqué antes del cómo.
-- Mostrar consecuencias de la decisión arquitectónica.
-- Explicar el impacto funcional de cada cambio.
-- Mantener la documentación actualizada cuando cambie la arquitectura o el flujo.
+- Explain why before explaining how.
+- Show the consequences of architectural decisions.
+- Explain the functional impact of each change.
+- Keep documentation up to date when the architecture or workflow changes.
 
-## 8. Criterio final de buena implementación
+## 8. Final quality standard
 
-Se considera una buena implementación si:
-- resuelve un problema real del usuario,
-- mantiene el código entendible,
-- no introduce complejidad sin necesidad,
-- está validada con pruebas o validación práctica,
-- y encaja con el roadmap del MVP.
+A good implementation is considered one that:
+- solves a real user problem,
+- keeps the code understandable,
+- avoids complexity without need,
+- is validated with tests or practical validation,
+- and fits the MVP roadmap.
 
-## 9. Excepción
+## 9. Exception
 
-Si el usuario pide explícitamente algo distinto, esa solicitud tiene prioridad sobre estas reglas.
+If the user explicitly requests something different, that request takes priority over these rules.
