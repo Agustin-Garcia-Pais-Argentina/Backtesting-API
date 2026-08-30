@@ -18,6 +18,76 @@ What is still not resolved in the functional base is:
 - real persistence in PostgreSQL,
 - automated domain and integration tests.
 
+## MVP completion checklist before calling the project "useful and working"
+
+This is the exact sequence we should close before declaring the MVP ready for a meaningful demo or public-facing use.
+
+### 1. Validate the end-to-end user journey
+- Objective: confirm that the main product flow works without manual corrections.
+- Sequence: register user -> login -> create portfolio -> add positions -> fetch market data -> run backtest -> retrieve result.
+- Success condition: a user can complete the entire flow in a real run without patching the application or changing the contract ad hoc.
+- Future improvements: add richer UX flows, dashboards, and additional portfolio operations.
+
+### 2. Stabilize the API contract
+- Objective: keep the request and response models clear, consistent, and documented.
+- How: review route naming, DTOs, status codes, and payload examples before moving into UI work.
+- Success condition: Swagger reflects the actual behavior and the response shape is predictable for clients.
+- Future improvements: versioning, pagination, filtering, and stronger request validation.
+
+### 3. Tighten validation and error handling
+- Objective: make invalid scenarios clear and explainable.
+- Required checks: invalid dates, empty symbol ranges, duplicate portfolio logic, invalid capital values, and unauthorized requests.
+- Success condition: a client gets accurate errors without ambiguous backend exceptions.
+- Future improvements: structured error envelopes, standardized API error codes, and logging/traceability.
+
+### 4. Document local configuration and startup procedure
+- Objective: ensure the project can be run by another engineer or reviewer without hidden setup steps.
+- Required items: environment variables, JWT config, startup commands, sample data behavior, and local API calls.
+- Success condition: a contributor can run the app locally using the project instructions and reproduce the main flow.
+- Future improvements: Docker Compose automation, environment profiles, and deployment-ready configuration.
+
+### 5. Decide the persistence strategy explicitly
+- Objective: clarify whether the current in-memory store is temporary or part of the real MVP contract.
+- Required decision: keep in-memory repositories only as an intentional MVP stage, and plan PostgreSQL + EF Core as the next real persistence milestone.
+- Success condition: the architecture document and the README clearly explain the reasoning.
+- Future improvements: migrations, repository implementation, transactions, and durable data storage.
+
+### 6. Confirm the MVP is demo-ready with deterministic sample data
+- Objective: avoid depending on external providers too early.
+- How: keep a minimal, repeatable dataset and a predictable run that can be re-used for demos and testing.
+- Success condition: the project can be demonstrated without brittle or flaky external dependencies.
+- Future improvements: real market-data ingestion, provider integrations, and normalization pipelines.
+
+### 7. Add basic operational checks
+- Objective: make the app easier to run, diagnose, and trust.
+- Required items: a health or status endpoint, clear logs for failed requests, and a minimal note in the README about the demo flow.
+- Success condition: a developer can tell whether the app is healthy and whether a failure is expected or a real bug.
+- Future improvements: observability, dashboards, tracing, and performance metrics.
+
+## What comes after the MVP: product, technical, and integration improvements
+
+Once the project is already useful and stable, the remaining work shifts from "basic functionality" to "scaling and quality".
+
+### Product improvements
+- portfolio dashboard and historical results
+- charting for drawdown, equity curve, and performance snapshots
+- saved strategies and parameter presets
+- better comparison between strategy runs
+- portfolio rebalancing and watchlists
+
+### Technical improvements
+- PostgreSQL + EF Core persistence
+- repository and unit-of-work cleanup
+- background job queues for expensive simulations
+- integration testing with real database and API validation
+- CI/CD, deployment pipelines, and environment automation
+
+### External integrations
+- real market-data providers
+- broker or exchange APIs
+- authentication providers or enterprise identity integration
+- notifications, alerts, and reporting flows
+
 ## P0 - Product foundation and what makes the MVP useful
 
 ### 1. Define the minimum financial domain
