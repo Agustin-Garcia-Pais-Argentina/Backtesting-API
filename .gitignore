@@ -1,0 +1,14 @@
+bin/
+obj/
+.vscode/
+.env
+*.user
+*.suo
+*.db
+*.sqlite
+*.log
+node_modules/
+dist/
+coverage/
+.DS_Store
+Thumbs.db

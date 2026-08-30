@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-PortfolioAnalytics.Worker-bc2478f4-96d6-4aa1-b557-5cef6675d545</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PortfolioAnalytics.Application\PortfolioAnalytics.Application.csproj" />
+    <ProjectReference Include="..\PortfolioAnalytics.Infrastructure\PortfolioAnalytics.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
