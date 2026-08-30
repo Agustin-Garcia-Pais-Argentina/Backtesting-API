@@ -1,237 +1,162 @@
 # PortfolioAnalytics API
 
-Este proyecto es un motor de backtesting y análisis financiero expuesto como una API RESTful. Está pensado para ayudar a usuarios a simular estrategias de inversión sobre datos históricos, evaluar su desempeño y gestionar carteras de activos de forma reproducible y ordenada.
+![Build](https://img.shields.io/badge/build-GitHub%20Actions-blue)
+![.NET](https://img.shields.io/badge/.NET-8-512BD4)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-El objetivo es trasladar la lógica analítica que suele vivir en scripts locales hacia un entorno más mantenible, seguro y escalable. El sistema permite sincronizar datos de mercado, modelar portafolios, ejecutar backtests y medir métricas clave como rentabilidad, drawdown, Sharpe y volatilidad.
+PortfolioAnalytics API es un backend de análisis financiero y gestión de carteras pensado para ser útil desde el primer paso. El proyecto combina autenticación, portafolios, posiciones y datos de mercado en una API REST que puede servir como base para backtesting, métricas y automatización de decisiones financieras.
 
-## ¿Qué es?
+## Arquitectura
 
-Es un backend orientado a Backtesting-as-a-Service: una API que permite ejecutar simulaciones de inversión sobre series históricas, comparar estrategias y mantener el estado de un portafolio de forma estructurada.
+```mermaid
+flowchart LR
+    A[Usuarios] --> B[API REST]
+    B --> C[Application Layer]
+    C --> D[Domain]
+    C --> E[Infrastructure]
+    E --> F[Repositorios en memoria / futuras persistencias]
+    E --> G[JWT / Identity]
+    E --> H[Market Data]
+    B --> I[Portfolio + Positions + Metrics]
+```
 
-## ¿A quiénes les sirve?
+La solución está organizada por capas:
 
-Está orientado a:
-- desarrolladores de aplicaciones fintech,
-- analistas financieros,
-- usuarios que desean validar ideas de inversión sin depender de Excel, notebooks aislados o scripts manuales,
-- equipos que necesitan un motor analítico reproducible y fácil de integrar.
+- `PortfolioAnalytics.Domain`: entidades, reglas de negocio y validaciones del dominio.
+- `PortfolioAnalytics.Application`: handlers, commands, queries, DTOs y casos de uso.
+- `PortfolioAnalytics.Infrastructure`: repositorios, autenticación, hashing y servicios de infraestructura.
+- `PortfolioAnalytics.Api`: controladores, configuración HTTP y composición de dependencias.
+- `tests`: validación de reglas y flujos principales.
 
 ## ¿Qué problema resuelve?
 
-La validación de estrategias de inversión normalmente ocurre en scripts locales que consumen archivos poco ordenados, saturan la memoria y no son reproducibles ni escalables. Este proyecto busca estandarizar el flujo de datos, gestionar portfolios y permitir ejecutar simulaciones pesadas sin bloquear la API ni depender de una computadora local.
+La mayoría de los escenarios financieros se desarrollan en scripts locales, con lógica dispersa y poca trazabilidad. Este proyecto busca centralizar la base del dominio financiero en una API pequeña pero real, con reglas claras y una estructura que permite crecer sin perder mantenibilidad.
 
 ## ¿Qué hace?
 
-- Ingesta datos de mercado desde fuentes externas.
-- Normaliza y almacena series históricas.
-- Gestiona portfolios y posiciones de activos.
-- Ejecuta backtests de estrategias sobre datos históricos.
-- Calcula métricas relevantes de rendimiento y riesgo.
-- Expone el sistema a través de una API REST para frontend o integraciones.
+- Registra e identifica usuarios.
+- Emite y valida JWT para proteger accessos.
+- Crea y gestiona carteras de inversión.
+- Agrega posiciones por símbolo y tipo de activo.
+- Sincroniza series históricas de mercado.
+- Expone endpoints HTTP para consumo por frontend o integraciones.
+- Sirve como base para backtesting y cálculo de métricas.
 
-## Arquitectura orientada al MVP
+## Aspectos ingenieriles
 
-La solución se estructura con capas bien definidas:
-- Domain: entidades y reglas del negocio financiero.
-- Application: casos de uso y workflows de negocio.
-- Infrastructure: persistencia, clientes externos y autenticación técnica.
-- API: exposición HTTP.
-- Worker: procesamiento pesado en segundo plano.
+### Integridad del dominio
 
-La intención no es construir una plataforma financiera “perfecta” desde el primer día, sino entregar un producto útil, mantenible y verificable.
+Las reglas clave viven en el dominio. Por ejemplo, no se permite duplicar un símbolo dentro del mismo portfolio, y los puntos de mercado validan su estructura antes de ser persistidos. Esto ayuda a evitar errores de negocio muy costosos.
 
-## Objetivo del proyecto
+### Autenticación simple y segura
 
-Convertir scripts analíticos de inversión en un producto útil y mantenible para:
-- crear y gestionar carteras de inversión,
-- sincronizar precios históricos de activos,
-- definir estrategias simples de inversión,
-- ejecutar backtests sobre datos históricos,
-- visualizar métricas clave de rendimiento y riesgo.
+La API usa JWT para proteger endpoints de usuario y cartera. La idea es que la autenticación sea clara, útil para un MVP y fácil de reemplazar más adelante por una solución con base de datos real.
 
-La idea es construir un MVP útil, no una plataforma financiera “de lujo” desde el primer día.
+### Arquitectura limpia
 
-## MVP propuesto y estado real
+Se separan responsabilidades para mantener el proyecto entendible:
 
-El mínimo viable para que el proyecto tenga valor real es:
-- Autenticación de usuarios con JWT. [Hecho en la base actual]
-- Creación y gestión de portafolios. [Hecho en la base actual]
-- Registro de posiciones (activo, cantidad, costo promedio). [Hecho en la base actual]
-- Carga o sincronización de series históricas de precios. [Hecho en la base actual con repositorio en memoria]
-- Ejecución de backtests para estrategias simples. [Siguiente bloque]
-- Cálculo de métricas de rendimiento y riesgo. [Siguiente bloque]
-- Persistencia central en PostgreSQL. [Próximo paso de maduración]
-- API REST para integrar con un cliente frontend. [En base funcional]
+- la API no toma decisiones de negocio,
+- el dominio no conoce HTTP ni EF Core,
+- la infraestructura encapsula la implementación concreta.
 
-## Stack recomendado
+Esto reduce acoplamientos y hace más fácil probar cada capa.
 
-- .NET 8 / C#
+## Stack tecnológico
+
+- C# / .NET 8
 - ASP.NET Core Web API
-- PostgreSQL
-- Entity Framework Core
-- Dapper (solo si la lectura de series temporales lo exige)
-- MediatR (opcional, sólo si el proyecto crece) 
-- Docker + Docker Compose
-- Hangfire o un worker service opcional para tareas pesadas
-- Testcontainers para integración
+- xUnit para tests
+- JWT para autenticación
+- BCrypt para hashing de contraseñas
+- InMemory repositories para validación local y MVP
+- Docker para entorno y despliegue local
 
-## Estructura del repositorio
+## Cómo utilizar
 
-```text
-.
-├── README.md
-├── ToDo.md
-├── docker-compose.yml
-├── .gitignore
-├── src/
-│   ├── PortfolioAnalytics.Domain/
-│   │   ├── Entities/
-│   │   ├── ValueObjects/
-│   │   ├── Enums/
-│   │   ├── Interfaces/
-│   │   └── Exceptions/
-│   ├── PortfolioAnalytics.Application/
-│   │   ├── Commands/
-│   │   ├── Queries/
-│   │   ├── Handlers/
-│   │   ├── DTOs/
-│   │   ├── Services/
-│   │   ├── Validators/
-│   │   └── Abstractions/
-│   ├── PortfolioAnalytics.Infrastructure/
-│   │   ├── Persistence/
-│   │   ├── Repositories/
-│   │   ├── DataAccess/
-│   │   ├── ExternalServices/
-│   │   ├── BackgroundJobs/
-│   │   └── Identity/
-│   ├── PortfolioAnalytics.Api/
-│   │   ├── Controllers/
-│   │   ├── Middleware/
-│   │   ├── Extensions/
-│   │   └── Program.cs
-│   ├── PortfolioAnalytics.Worker/
-│   │   ├── Services/
-│   │   └── Program.cs
-│   ├── PortfolioAnalytics.Shared/
-│   ├── PortfolioAnalytics.Contracts/
-│   └── ...
-├── tests/
-│   ├── PortfolioAnalytics.UnitTests/
-│   └── PortfolioAnalytics.IntegrationTests/
-├── client/
-│   ├── src/
-│   └── public/
-└── docker/
-```
-
-## Cómo pensar el dominio
-
-El núcleo del producto gira en torno a estas entidades:
-- Usuario
-- Portfolio
-- Position
-- Asset
-- Trade
-- MarketDataPoint
-- StrategyDefinition
-- BacktestRun
-- PerformanceMetrics
-
-Las reglas importantes del negocio deben vivir en el dominio, no en la API ni en la infraestructura.
-
-## Flujos funcionales principales
-
-### 1. Crear y manejar un portafolio
-- Un usuario crea una cartera.
-- Agrega activos con cantidad y costo promedio.
-- Puede modificar o eliminar posiciones.
-
-### 2. Sincronizar datos de mercado
-- Se obtienen precios históricos.
-- Se normalizan y se guardan.
-- Se validan duplicados por símbolo + fecha + fuente.
-
-### 3. Ejecutar backtest
-- Se toma una estrategia definida.
-- Se ejecuta sobre históricos de mercado.
-- Se calculan métricas (retorno, drawdown, Sharpe, etc.).
-- Se guarda el resultado para comparación posterior.
-
-## Métricas clave del MVP
-
-- CAGR
-- Retorno total
-- Drawdown máximo
-- Sharpe ratio
-- Volatilidad
-- Número de trades
-- Compare vs benchmark
-
-## Roadmap sugerido
-
-### Fase 1: MVP funcional
-- Auth JWT
-- Portfolio CRUD
-- Position management
-- Market data sync
-- Backtest básico
-- Resultados y métricas
-
-### Fase 2: Productización
-- Comparación entre estrategias
-- Historial de corridas
-- Mejoras de observabilidad
-- Export de resultados
-
-### Fase 3: Escala y robustez
-- Worker dedicado
-- Dapper para lecturas masivas
-- TimescaleDB o particionamiento de series
-- CI/CD con Testcontainers
-
-## Cómo arrancar localmente
-
-1. Clonar el repositorio.
-2. Ajustar variables de entorno.
-3. Levantar PostgreSQL con Docker Compose.
-4. Ejecutar la API.
-5. Ejecutar el worker si la tarea pesada se mueve a un proceso separado.
-
-Ejemplo conceptual:
+1. Clonar el repositorio:
 
 ```bash
-docker compose up -d
+git clone https://github.com/tu-usuario/PortfolioAnalytics.git
+cd PortfolioAnalytics
+```
 
+2. Restaurar dependencias:
+
+```bash
 dotnet restore
+```
 
-dotnet build
+3. Ejecutar la API:
 
+```bash
 dotnet run --project src/PortfolioAnalytics.Api
 ```
 
+4. La API queda disponible localmente en:
+
+```text
+https://localhost:5001
+http://localhost:5000
+```
+
+5. Usar JWT en los endpoints protegidos. El flujo actual incluye registro, login y acceso a portfolios.
+
+## Flujo principal del MVP
+
+### 1. Registro y autenticación
+- El usuario se registra con email, nombre y contraseña.
+- La contraseña se hashea antes de guardarse.
+- El sistema genera un token JWT para acceso futuro.
+
+### 2. Portfolio y posiciones
+- El usuario crea un portfolio.
+- Agrega posiciones por símbolo, cantidad y precio.
+- El sistema valida que no existan duplicados por símbolo.
+
+### 3. Market data
+- Se cargan puntos de mercado con fecha, precio de apertura, máximo, mínimo, cierre y volumen.
+- Se usan para alimentar análisis y futuras métricas.
+
+## Roadmap
+
+La hoja de ruta del proyecto vive en [ToDo.md](./ToDo.md).
+
+### Fase 1: MVP funcional
+- autenticación JWT
+- gestión de portfolios y posiciones
+- sincronización de market data
+- validación de reglas del dominio
+- tests unitarios de flujo crítico
+
+### Fase 2: analítica financiera
+- backtesting base
+- cálculo de métricas como retorno, drawdown y Sharpe
+- comparación de estrategias
+- almacenamiento persistente real
+
+### Fase 3: madurez
+- PostgreSQL + EF Core
+- integraciones reales con fuentes de precios
+- tests de integración
+- observabilidad y despliegue
+
 ## Estado actual
 
-El proyecto ya no está solo en la fase de definición. En esta etapa actual se tiene una base funcional de:
+El proyecto ya tiene una base funcional útil para un MVP:
 
-- autenticación con JWT,
-- registro y login de usuarios,
-- creación de portfolios y posiciones,
-- API protegida por token,
-- almacenamiento de series históricas de mercado con repositorio en memoria.
+- usuarios con autenticación y JWT,
+- portfolio y posiciones,
+- API protegida,
+- market data en memoria,
+- tests unitarios para las reglas más valiosas.
 
-Esto significa que la plataforma ya puede validar el flujo principal del negocio en local, aunque todavía no se ha incorporado la capa de persistencia definitiva ni el motor de backtesting real.
-
-El siguiente bloque de trabajo es: backtesting base + métricas + tests automáticos.
+Todavía no es una plataforma de producción final, pero sí es una base real, sólida y práctica para seguir construyendo.
 
 ## Contribuir
 
-Las contribuciones se priorizarán según el roadmap y la factibilidad técnica del momento. El criterio base es:
-- impacto funcional real,
-- simplicidad de implementación,
-- claridad del modelo de dominio,
-- capacidad de validar con pruebas.
+Las contribuciones se priorizan por valor funcional y claridad técnica. La idea es seguir una evolución honesta del proyecto, sin agregar capas innecesarias ni peleas de arquitectura sin necesidad.
 
 ## Notas
 
-Este proyecto está pensado como una pieza técnica útil para análisis financiero y estrategia de inversión, no como un “demo de arquitectura” sin valor operativo.
+Este proyecto está pensado como una pieza útil para análisis financiero y estrategia de inversión, no como un demo de arquitectura sin valor operativo. La prioridad es construir algo que sirva, se pueda entender y pueda crecer de forma sostenible.
