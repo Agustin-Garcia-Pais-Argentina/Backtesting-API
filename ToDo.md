@@ -40,6 +40,18 @@ This is the exact sequence we should close before declaring the MVP ready for a 
 - Success condition: a client gets accurate errors without ambiguous backend exceptions.
 - Future improvements: structured error envelopes, standardized API error codes, and logging/traceability.
 
+### 3.1. Confirm that HTTP error responses are mapped correctly
+- Objective: ensure that all business-rule failures and invalid client inputs result in the correct HTTP status code and a predictable payload.
+- Required checks: duplicate user registration should return a conflict/error response instead of an unhandled exception, invalid input should return 400/422, unauthorized access should return 401, and not-found cases should return 404.
+- Success condition: the API responds consistently and clearly for every invalid flow a client is expected to hit.
+- Future improvements: introduce a standard error response contract such as a problem-details envelope for all API failures.
+
+### 3.2. Align Postman negative tests with the real API contract
+- Objective: prevent false failures caused by expecting success from flows that are intentionally invalid.
+- Required checks: duplicate-email registration must assert a non-200 error, requests without a valid JWT must assert 401, missing or invalid route parameters must assert 400/404, and payloads that do not match the API contract must assert validation failures instead of expecting a successful response.
+- Success condition: the tests validate the correct business behavior and the correct HTTP semantics, instead of asserting success for scenarios that are supposed to fail.
+- Future improvements: create a dedicated negative-test collection with explicit expected statuses for duplicate registration, invalid ids, unauthorized access, invalid form bodies, and empty time ranges.
+
 ### 4. Document local configuration and startup procedure
 - Objective: ensure the project can be run by another engineer or reviewer without hidden setup steps.
 - Required items: environment variables, JWT config, startup commands, sample data behavior, and local API calls.
