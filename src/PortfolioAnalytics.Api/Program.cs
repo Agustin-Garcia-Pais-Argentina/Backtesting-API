@@ -84,6 +84,11 @@ app.UseMiddleware<ApiExceptionMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "Healthy",
+    service = "PortfolioAnalytics.Api"
+}));
 app.MapControllers();
 
 app.Run();

@@ -11,10 +11,12 @@ namespace PortfolioAnalytics.Api.Exceptions;
 public sealed class ApiExceptionMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ILogger<ApiExceptionMiddleware> _logger;
 
-    public ApiExceptionMiddleware(RequestDelegate next)
+    public ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExceptionMiddleware> logger)
     {
         _next = next;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -25,6 +27,11 @@ public sealed class ApiExceptionMiddleware
         }
         catch (Exception exception)
         {
+            _logger.LogError(
+                exception,
+                "Unhandled exception while processing {Method} {Path}.",
+                context.Request.Method,
+                context.Request.Path);
             await HandleExceptionAsync(context, exception);
         }
     }

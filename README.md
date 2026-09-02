@@ -87,20 +87,44 @@ cd PortfolioAnalytics
 dotnet restore
 ```
 
-3. Run the API:
+3. Configure JWT (optional for local development):
+
+The API has a development-only fallback key, but deployments should provide a unique secret through configuration:
+
+```powershell
+$env:Jwt__Key = "replace-with-a-long-random-secret"
+$env:Jwt__Issuer = "PortfolioAnalytics"
+$env:Jwt__Audience = "PortfolioAnalyticsUsers"
+```
+
+4. Run the API:
 
 ```bash
 dotnet run --project src/PortfolioAnalytics.Api
 ```
 
-4. The API is available locally at:
+5. The API is available locally at:
 
 ```text
 https://localhost:5001
 http://localhost:5000
 ```
 
-5. Use JWT on protected endpoints. The current flow includes registration, login, and access to portfolios.
+6. Verify the service and use JWT on protected endpoints:
+
+```text
+GET /health
+POST /api/auth/register
+POST /api/auth/login
+```
+
+The complete request sequence is: register, login, create a portfolio, add a position, query seeded market data, run a backtest, and retrieve its result. Swagger is available in development at `/swagger`.
+
+### Persistence and demo data
+
+The current MVP intentionally uses in-memory repositories. This keeps local setup fast and makes the workflow deterministic; data is reset whenever the API restarts. PostgreSQL with EF Core is the next persistence milestone, not a hidden production dependency.
+
+On startup, the API loads a fixed sample series for `AAPL`, `MSFT`, and `SPY` covering 2024-01-02 through 2024-01-04. This allows the market-data and backtest flows to be reproduced without an external provider.
 
 ## MVP flow
 
