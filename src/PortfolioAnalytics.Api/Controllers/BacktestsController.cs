@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PortfolioAnalytics.Application.Commands;
 using PortfolioAnalytics.Application.DTOs;
-using PortfolioAnalytics.Application.Handlers;
 using PortfolioAnalytics.Application.Services;
 
 namespace PortfolioAnalytics.Api.Controllers;
@@ -15,17 +14,19 @@ namespace PortfolioAnalytics.Api.Controllers;
 [Route("api/[controller]")]
 public sealed class BacktestsController : ControllerBase
 {
-    private readonly RunBacktestHandler _runBacktestHandler;
     private readonly BacktestExecutionStore _executionStore;
+    private readonly BacktestExecutionQueue _executionQueue;
 
-    public BacktestsController(RunBacktestHandler runBacktestHandler, BacktestExecutionStore executionStore)
+    public BacktestsController(
+        BacktestExecutionStore executionStore,
+        BacktestExecutionQueue executionQueue)
     {
-        _runBacktestHandler = runBacktestHandler;
         _executionStore = executionStore;
+        _executionQueue = executionQueue;
     }
 
     /// <summary>
-    /// Executes a deterministic backtest for a symbol within a date range.
+    /// Queues a deterministic backtest for asynchronous execution.
     /// </summary>
     [HttpPost("run")]
     public async Task<ActionResult<BacktestRunResponse>> RunAsync([FromBody] BacktestRunRequest request, CancellationToken cancellationToken)
@@ -50,10 +51,6 @@ public sealed class BacktestsController : ControllerBase
             return BadRequest("Initial capital must be greater than zero.");
         }
 
-        var metrics = await _runBacktestHandler.HandleAsync(
-            new RunBacktestCommand(request.Symbol, request.StartDate, request.EndDate, request.InitialCapital),
-            cancellationToken);
-
         var response = new BacktestRunResponse
         {
             Id = Guid.NewGuid(),
@@ -62,19 +59,18 @@ public sealed class BacktestsController : ControllerBase
             EndDate = request.EndDate,
             InitialCapital = request.InitialCapital,
             StrategyType = "BuyAndHold",
-            Status = "Completed",
+            Status = "Queued",
             CreatedAt = DateTime.UtcNow,
-            CompletedAt = DateTime.UtcNow,
-            TotalReturn = metrics.TotalReturn,
-            AnnualizedReturn = metrics.AnnualizedReturn,
-            MaxDrawdown = metrics.MaxDrawdown,
-            SharpeRatio = metrics.SharpeRatio,
-            Volatility = metrics.Volatility,
-            TradeCount = metrics.TradeCount
         };
 
         _executionStore.Save(response);
-        return Ok(response);
+        await _executionQueue.EnqueueAsync(
+            new BacktestWorkItem(
+                response.Id,
+                new RunBacktestCommand(request.Symbol, request.StartDate, request.EndDate, request.InitialCapital)),
+            CancellationToken.None);
+
+        return AcceptedAtRoute("GetBacktestById", new { id = response.Id }, response);
     }
 
     /// <summary>
@@ -89,7 +85,7 @@ public sealed class BacktestsController : ControllerBase
     /// <summary>
     /// Returns a previously generated backtest result by identifier.
     /// </summary>
-    [HttpGet("{id:guid}")]
+    [HttpGet("{id:guid}", Name = "GetBacktestById")]
     public ActionResult<BacktestRunResponse> GetByIdAsync(Guid id)
     {
         var result = _executionStore.GetById(id);

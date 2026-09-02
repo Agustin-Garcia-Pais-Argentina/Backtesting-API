@@ -173,15 +173,16 @@ Once the project is already useful and stable, the remaining work shifts from "b
 - Impact: the system’s ability to deliver performance analysis.
 - Future improvements: include rebalancing strategies, momentum, mean reversion, parameter optimization, and multi-asset backtests.
 
-### 9. Run backtests in the background — **NEXT IN LINE**
+### 9. Run backtests in the background — **DONE**
 - Objective: prevent the API from blocking when a heavy calculation is executed.
 - Owner: backend + worker.
 - How: an endpoint returns 202 Accepted with a job ID, and a worker processes the calculation.
 - Where: `src/PortfolioAnalytics.Api/`, `src/PortfolioAnalytics.Worker/`, `src/PortfolioAnalytics.Infrastructure/BackgroundJobs/`
 - Impact: user experience and API scalability.
+- Status: completed for the MVP. Backtest requests now return `202 Accepted`, are processed by an in-memory background service, and expose queued, running, completed, or failed status through the existing retrieval endpoint.
 - Future improvements: job queues, retries, cancellation, event-driven processing, and external job storage.
 
-### 10. Save backtest results and key metrics — **IN QUEUE**
+### 10. Save backtest results and key metrics — **NEXT IN LINE**
 - Objective: persist results for later comparison.
 - Owner: infrastructure + application.
 - How: store run summary, strategy, parameters, and calculated metrics.

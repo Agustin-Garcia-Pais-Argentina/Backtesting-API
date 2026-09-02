@@ -11,7 +11,7 @@ public sealed class BacktestRunResponse
     public DateOnly EndDate { get; set; }
     public decimal InitialCapital { get; set; }
     public string StrategyType { get; set; } = "BuyAndHold";
-    public string Status { get; set; } = "Completed";
+    public string Status { get; set; } = "Queued";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
     public decimal TotalReturn { get; set; }

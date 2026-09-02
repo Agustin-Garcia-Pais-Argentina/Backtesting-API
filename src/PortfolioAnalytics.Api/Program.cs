@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using PortfolioAnalytics.Api.Exceptions;
+using PortfolioAnalytics.Api.Backtesting;
 using PortfolioAnalytics.Application.Abstractions;
 using PortfolioAnalytics.Application.Handlers;
 using PortfolioAnalytics.Application.Services;
@@ -43,7 +44,9 @@ builder.Services.AddSingleton<SyncMarketDataHandler>();
 builder.Services.AddSingleton<GetMarketDataBySymbolHandler>();
 builder.Services.AddSingleton<BacktestService>();
 builder.Services.AddSingleton<BacktestExecutionStore>();
+builder.Services.AddSingleton<BacktestExecutionQueue>();
 builder.Services.AddSingleton<RunBacktestHandler>();
+builder.Services.AddHostedService<BacktestExecutionWorker>();
 
 // JWT configuration: the API validates the token on every protected request.
 // This is how we know which user is calling the endpoint.

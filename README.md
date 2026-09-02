@@ -143,7 +143,7 @@ POST /api/auth/register
 POST /api/auth/login
 ```
 
-The complete request sequence is: register, login, create a portfolio, add a position, query seeded market data, run a backtest, and retrieve its result. Swagger is available in development at `/swagger`.
+The complete request sequence is: register, login, create a portfolio, add a position, query seeded market data, queue a backtest, poll its result until it is completed, and retrieve its metrics. The backtest endpoint returns `202 Accepted` with a result location while the in-memory background worker processes it. Swagger is available in development at `/swagger`.
 
 ### Persistence and demo data
 
