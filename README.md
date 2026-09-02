@@ -87,7 +87,32 @@ cd PortfolioAnalytics
 dotnet restore
 ```
 
-3. Configure JWT (optional for local development):
+3. Start the local PostgreSQL environment (optional while the API uses in-memory repositories):
+
+Copy `.env.example` to `.env` and adjust the values if needed, then run:
+
+```powershell
+docker compose up -d
+docker compose ps
+```
+
+The database is exposed on `localhost:5432` by default. The container includes a healthcheck and stores its data in the `portfolioanalytics-postgres-data` Docker volume.
+
+To stop the database without deleting its data:
+
+```powershell
+docker compose down
+```
+
+To stop it and remove the local database volume:
+
+```powershell
+docker compose down -v
+```
+
+PostgreSQL does not need to be installed or running on the host. Docker Desktop and a free local port are enough. `.env` is local configuration and must not be committed.
+
+4. Configure JWT (optional for local development):
 
 The API has a development-only fallback key, but deployments should provide a unique secret through configuration:
 
@@ -97,20 +122,20 @@ $env:Jwt__Issuer = "PortfolioAnalytics"
 $env:Jwt__Audience = "PortfolioAnalyticsUsers"
 ```
 
-4. Run the API:
+5. Run the API:
 
 ```bash
 dotnet run --project src/PortfolioAnalytics.Api
 ```
 
-5. The API is available locally at:
+6. The API is available locally at:
 
 ```text
 https://localhost:5001
 http://localhost:5000
 ```
 
-6. Verify the service and use JWT on protected endpoints:
+7. Verify the service and use JWT on protected endpoints:
 
 ```text
 GET /health

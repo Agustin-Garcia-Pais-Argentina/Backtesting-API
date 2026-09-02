@@ -124,12 +124,13 @@ Once the project is already useful and stable, the remaining work shifts from "b
 - Impact: all code organization and build flow.
 - Future improvements: split packages by feature or by context as the project grows and becomes more specialized.
 
-### 3. Configure PostgreSQL and the local environment with Docker — **NEXT IN LINE**
+### 3. Configure PostgreSQL and the local environment with Docker — **DONE**
 - Objective: enable a real database for development and integration testing.
 - Owner: backend / DevOps.
 - How: define `docker-compose.yml` with PostgreSQL and minimal environment variables.
 - Where: project root and `docker/`
 - Impact: local development, tests, and deployment.
+- Status: completed. Added `docker-compose.yml`, `.env.example`, persistent storage, healthcheck, and README instructions. Runtime startup remains to be verified once Docker Desktop's Linux engine is running.
 - Future improvements: add Redis, pgAdmin, observability, and seed scripts.
 
 ### 4. Implement JWT authentication — **DONE**
@@ -172,7 +173,7 @@ Once the project is already useful and stable, the remaining work shifts from "b
 - Impact: the system’s ability to deliver performance analysis.
 - Future improvements: include rebalancing strategies, momentum, mean reversion, parameter optimization, and multi-asset backtests.
 
-### 9. Run backtests in the background — **IN QUEUE**
+### 9. Run backtests in the background — **NEXT IN LINE**
 - Objective: prevent the API from blocking when a heavy calculation is executed.
 - Owner: backend + worker.
 - How: an endpoint returns 202 Accepted with a job ID, and a worker processes the calculation.
