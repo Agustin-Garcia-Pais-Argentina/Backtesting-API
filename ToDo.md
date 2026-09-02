@@ -26,12 +26,14 @@ This is the exact sequence we should close before declaring the MVP ready for a 
 - Objective: confirm that the main product flow works without manual corrections.
 - Sequence: register user -> login -> create portfolio -> add positions -> fetch market data -> run backtest -> retrieve result.
 - Success condition: a user can complete the entire flow in a real run without patching the application or changing the contract ad hoc.
+- Status: completed for the happy path. The core flow was exercised successfully in a real local run and the MVP flow is operational for valid requests.
 - Future improvements: add richer UX flows, dashboards, and additional portfolio operations.
 
 ### 2. Stabilize the API contract
 - Objective: keep the request and response models clear, consistent, and documented.
 - How: review route naming, DTOs, status codes, and payload examples before moving into UI work.
 - Success condition: Swagger reflects the actual behavior and the response shape is predictable for clients.
+- Status: completed. The API now centralizes exception mapping and the endpoint-by-endpoint Postman contract was validated against the real implementation, including the negative-flow cases.
 - Future improvements: versioning, pagination, filtering, and stronger request validation.
 
 ### 3. Tighten validation and error handling
@@ -44,12 +46,14 @@ This is the exact sequence we should close before declaring the MVP ready for a 
 - Objective: ensure that all business-rule failures and invalid client inputs result in the correct HTTP status code and a predictable payload.
 - Required checks: duplicate user registration should return a conflict/error response instead of an unhandled exception, invalid input should return 400/422, unauthorized access should return 401, and not-found cases should return 404.
 - Success condition: the API responds consistently and clearly for every invalid flow a client is expected to hit.
-- Future improvements: introduce a standard error response contract such as a problem-details envelope for all API failures.
+- Status: completed for the web API layer through a centralized exception middleware that translates exceptions into consistent problem-details responses without leaking internal implementation details.
+- Future improvements: refine the exact payload contract and document the standard error envelope consistently for all endpoints.
 
 ### 3.2. Align Postman negative tests with the real API contract
 - Objective: prevent false failures caused by expecting success from flows that are intentionally invalid.
 - Required checks: duplicate-email registration must assert a non-200 error, requests without a valid JWT must assert 401, missing or invalid route parameters must assert 400/404, and payloads that do not match the API contract must assert validation failures instead of expecting a successful response.
 - Success condition: the tests validate the correct business behavior and the correct HTTP semantics, instead of asserting success for scenarios that are supposed to fail.
+- Status: in progress; the API contract is now centralized, but the explicit negative Postman suite still needs to be finalized and validated against the exact expected statuses.
 - Future improvements: create a dedicated negative-test collection with explicit expected statuses for duplicate registration, invalid ids, unauthorized access, invalid form bodies, and empty time ranges.
 
 ### 4. Document local configuration and startup procedure

@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using PortfolioAnalytics.Api.Exceptions;
 using PortfolioAnalytics.Application.Abstractions;
 using PortfolioAnalytics.Application.Handlers;
 using PortfolioAnalytics.Application.Services;
@@ -17,6 +18,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddProblemDetails();
 
 // In-memory repositories are used for the MVP so we can validate the flow quickly.
 // Later, we will replace these with PostgreSQL-backed implementations.
@@ -78,6 +80,7 @@ if (app.Environment.IsDevelopment())
 var marketDataRepository = app.Services.GetRequiredService<InMemoryMarketDataRepository>();
 marketDataRepository.SeedSampleData();
 
+app.UseMiddleware<ApiExceptionMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

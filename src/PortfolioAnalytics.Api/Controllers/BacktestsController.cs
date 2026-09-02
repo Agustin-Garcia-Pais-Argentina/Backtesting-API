@@ -50,42 +50,31 @@ public sealed class BacktestsController : ControllerBase
             return BadRequest("Initial capital must be greater than zero.");
         }
 
-        try
-        {
-            var metrics = await _runBacktestHandler.HandleAsync(
-                new RunBacktestCommand(request.Symbol, request.StartDate, request.EndDate, request.InitialCapital),
-                cancellationToken);
+        var metrics = await _runBacktestHandler.HandleAsync(
+            new RunBacktestCommand(request.Symbol, request.StartDate, request.EndDate, request.InitialCapital),
+            cancellationToken);
 
-            var response = new BacktestRunResponse
-            {
-                Id = Guid.NewGuid(),
-                Symbol = request.Symbol,
-                StartDate = request.StartDate,
-                EndDate = request.EndDate,
-                InitialCapital = request.InitialCapital,
-                StrategyType = "BuyAndHold",
-                Status = "Completed",
-                CreatedAt = DateTime.UtcNow,
-                CompletedAt = DateTime.UtcNow,
-                TotalReturn = metrics.TotalReturn,
-                AnnualizedReturn = metrics.AnnualizedReturn,
-                MaxDrawdown = metrics.MaxDrawdown,
-                SharpeRatio = metrics.SharpeRatio,
-                Volatility = metrics.Volatility,
-                TradeCount = metrics.TradeCount
-            };
+        var response = new BacktestRunResponse
+        {
+            Id = Guid.NewGuid(),
+            Symbol = request.Symbol,
+            StartDate = request.StartDate,
+            EndDate = request.EndDate,
+            InitialCapital = request.InitialCapital,
+            StrategyType = "BuyAndHold",
+            Status = "Completed",
+            CreatedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+            TotalReturn = metrics.TotalReturn,
+            AnnualizedReturn = metrics.AnnualizedReturn,
+            MaxDrawdown = metrics.MaxDrawdown,
+            SharpeRatio = metrics.SharpeRatio,
+            Volatility = metrics.Volatility,
+            TradeCount = metrics.TradeCount
+        };
 
-            _executionStore.Save(response);
-            return Ok(response);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return UnprocessableEntity(ex.Message);
-        }
+        _executionStore.Save(response);
+        return Ok(response);
     }
 
     /// <summary>
