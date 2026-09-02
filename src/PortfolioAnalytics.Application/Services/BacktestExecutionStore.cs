@@ -4,8 +4,8 @@ using PortfolioAnalytics.Application.DTOs;
 namespace PortfolioAnalytics.Application.Services;
 
 /// <summary>
-/// Stores the last backtest results in memory so the API can return them by identifier.
-/// This keeps the MVP simple while still exposing a real retrieval workflow.
+/// Stores backtest runs and their calculated metrics in memory so they can be queried
+/// after background execution completes.
 /// </summary>
 public sealed class BacktestExecutionStore
 {
@@ -15,6 +15,19 @@ public sealed class BacktestExecutionStore
     {
         _runs[run.Id] = run;
         return run;
+    }
+
+    public bool Update(Guid id, Action<BacktestRunResponse> update)
+    {
+        ArgumentNullException.ThrowIfNull(update);
+
+        if (!_runs.TryGetValue(id, out var run))
+        {
+            return false;
+        }
+
+        update(run);
+        return true;
     }
 
     public BacktestRunResponse? GetById(Guid id)

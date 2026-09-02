@@ -36,22 +36,23 @@ public sealed class BacktestExecutionWorker : BackgroundService
                 continue;
             }
 
-            currentRun.Status = "Running";
-            _store.Save(currentRun);
+            _store.Update(workItem.RunId, run => run.Status = "Running");
 
             try
             {
                 var metrics = await _handler.HandleAsync(workItem.Command, stoppingToken);
 
-                currentRun.Status = "Completed";
-                currentRun.CompletedAt = DateTime.UtcNow;
-                currentRun.TotalReturn = metrics.TotalReturn;
-                currentRun.AnnualizedReturn = metrics.AnnualizedReturn;
-                currentRun.MaxDrawdown = metrics.MaxDrawdown;
-                currentRun.SharpeRatio = metrics.SharpeRatio;
-                currentRun.Volatility = metrics.Volatility;
-                currentRun.TradeCount = metrics.TradeCount;
-                _store.Save(currentRun);
+                _store.Update(workItem.RunId, run =>
+                {
+                    run.Status = "Completed";
+                    run.CompletedAt = DateTime.UtcNow;
+                    run.TotalReturn = metrics.TotalReturn;
+                    run.AnnualizedReturn = metrics.AnnualizedReturn;
+                    run.MaxDrawdown = metrics.MaxDrawdown;
+                    run.SharpeRatio = metrics.SharpeRatio;
+                    run.Volatility = metrics.Volatility;
+                    run.TradeCount = metrics.TradeCount;
+                });
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -59,9 +60,11 @@ public sealed class BacktestExecutionWorker : BackgroundService
             }
             catch (Exception exception)
             {
-                currentRun.Status = "Failed";
-                currentRun.CompletedAt = DateTime.UtcNow;
-                _store.Save(currentRun);
+                _store.Update(workItem.RunId, run =>
+                {
+                    run.Status = "Failed";
+                    run.CompletedAt = DateTime.UtcNow;
+                });
                 _logger.LogError(exception, "Backtest {RunId} failed during background execution.", workItem.RunId);
             }
         }

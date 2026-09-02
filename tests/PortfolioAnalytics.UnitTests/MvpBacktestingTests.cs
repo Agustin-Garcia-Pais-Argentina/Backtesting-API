@@ -1,4 +1,5 @@
 using PortfolioAnalytics.Application.Commands;
+using PortfolioAnalytics.Application.DTOs;
 using PortfolioAnalytics.Application.Handlers;
 using PortfolioAnalytics.Application.Services;
 using PortfolioAnalytics.Domain.Entities;
@@ -138,5 +139,36 @@ public class MvpBacktestingTests
             handler.HandleAsync(new RunBacktestCommand("AAPL", new DateOnly(2024, 1, 10), new DateOnly(2024, 1, 12), 10000m)));
 
         Assert.Contains("No market data available", exception.Message);
+    }
+
+    [Fact]
+    public void BacktestExecutionStore_ShouldKeepCompletedMetricsForLaterRetrieval()
+    {
+        var store = new BacktestExecutionStore();
+        var run = new BacktestRunResponse
+        {
+            Id = Guid.NewGuid(),
+            Symbol = "AAPL",
+            Status = "Queued"
+        };
+
+        store.Save(run);
+
+        var updated = store.Update(run.Id, savedRun =>
+        {
+            savedRun.Status = "Completed";
+            savedRun.TotalReturn = 0.15m;
+            savedRun.TradeCount = 1;
+            savedRun.CompletedAt = DateTime.UtcNow;
+        });
+
+        var result = store.GetById(run.Id);
+
+        Assert.True(updated);
+        Assert.NotNull(result);
+        Assert.Equal("Completed", result!.Status);
+        Assert.Equal(0.15m, result.TotalReturn);
+        Assert.Equal(1, result.TradeCount);
+        Assert.NotNull(result.CompletedAt);
     }
 }

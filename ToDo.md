@@ -182,12 +182,13 @@ Once the project is already useful and stable, the remaining work shifts from "b
 - Status: completed for the MVP. Backtest requests now return `202 Accepted`, are processed by an in-memory background service, and expose queued, running, completed, or failed status through the existing retrieval endpoint.
 - Future improvements: job queues, retries, cancellation, event-driven processing, and external job storage.
 
-### 10. Save backtest results and key metrics — **NEXT IN LINE**
+### 10. Save backtest results and key metrics — **DONE**
 - Objective: persist results for later comparison.
 - Owner: infrastructure + application.
 - How: store run summary, strategy, parameters, and calculated metrics.
 - Where: `src/PortfolioAnalytics.Domain/Entities/`, `src/PortfolioAnalytics.Infrastructure/Repositories/`
 - Impact: the usefulness of the product because it allows strategy comparison over time.
+- Status: completed for the MVP. The in-memory execution store keeps each run and updates its status and calculated metrics after background processing. Durable PostgreSQL persistence remains a post-MVP infrastructure step.
 - Future improvements: save equity curve series, trade logs, and date-based snapshots.
 
 ### 11. Expose MVP REST endpoints — **DONE**
@@ -200,7 +201,7 @@ Once the project is already useful and stable, the remaining work shifts from "b
 
 ## P1 - Product value and feature improvement
 
-### 12. Show performance metrics in a dashboard — **IN QUEUE**
+### 12. Show performance metrics in a dashboard — **NEXT IN LINE**
 - Objective: make results understandable to the user.
 - Owner: frontend + API + analytics.
 - How: return summary metrics so the client can render graphs.
