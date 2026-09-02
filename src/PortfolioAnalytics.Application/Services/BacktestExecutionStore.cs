@@ -17,17 +17,20 @@ public sealed class BacktestExecutionStore
         return run;
     }
 
-    public bool Update(Guid id, Action<BacktestRunResponse> update)
+    public bool Update(Guid id, Func<BacktestRunResponse, BacktestRunResponse> update)
     {
         ArgumentNullException.ThrowIfNull(update);
 
-        if (!_runs.TryGetValue(id, out var run))
+        while (_runs.TryGetValue(id, out var currentRun))
         {
-            return false;
+            var updatedRun = update(currentRun);
+            if (_runs.TryUpdate(id, updatedRun, currentRun))
+            {
+                return true;
+            }
         }
 
-        update(run);
-        return true;
+        return false;
     }
 
     public BacktestRunResponse? GetById(Guid id)

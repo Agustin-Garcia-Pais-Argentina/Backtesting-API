@@ -78,7 +78,7 @@ The solution is designed with separation by layers to keep the project clear and
 ┌──────────────────────────────────────────────────────────────────────┐
 │                       PortfolioAnalytics.Worker                     │
 │ - Heavy tasks                                                       │
-│ - Backtest execution                                                │
+│ - Future externalized backtest execution                            │
 │ - Market sync or asynchronous processing                             │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -167,6 +167,10 @@ Responsibilities:
 - synchronize market data sources,
 - keep long-running work outside the request thread,
 - avoid blocking the API.
+
+For the current MVP, the backtest background service is hosted by the API so the queue
+and in-memory result store remain in one process. The standalone Worker project is kept
+for the future stage where jobs move to durable or distributed infrastructure.
 
 ## 4. Design principles
 

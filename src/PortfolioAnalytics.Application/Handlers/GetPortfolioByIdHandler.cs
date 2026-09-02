@@ -13,8 +13,12 @@ public sealed class GetPortfolioByIdHandler
         _portfolioRepository = portfolioRepository;
     }
 
-    public async Task<Portfolio?> HandleAsync(GetPortfolioByIdQuery query, CancellationToken cancellationToken = default)
+    public async Task<Portfolio?> HandleAsync(
+        GetPortfolioByIdQuery query,
+        Guid currentUserId,
+        CancellationToken cancellationToken = default)
     {
-        return await _portfolioRepository.GetByIdAsync(query.Id, cancellationToken);
+        var portfolio = await _portfolioRepository.GetByIdAsync(query.Id, cancellationToken);
+        return portfolio?.UserId == currentUserId ? portfolio : null;
     }
 }

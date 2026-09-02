@@ -266,6 +266,7 @@ Once the project is already useful and stable, the remaining work shifts from "b
 - Make each step small enough to validate quickly.
 - Use tests as a safety net for critical financial rules.
 - Keep documentation aligned with the current state of the project as the code evolves.
+- Quality refactor completed: portfolio ownership is enforced in the application layer, JWT claim parsing is safe, backtest result updates use immutable snapshots, and template placeholder classes were removed.
 
 ## Notes
 

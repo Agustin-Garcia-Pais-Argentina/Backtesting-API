@@ -40,10 +40,8 @@ public sealed class PortfoliosController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PortfolioResponse>> CreateAsync([FromBody] CreatePortfolioRequest request, CancellationToken cancellationToken)
     {
-        var userIdFromClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var currentUserId = !string.IsNullOrWhiteSpace(userIdFromClaim)
-            ? Guid.Parse(userIdFromClaim)
-            : request.UserId;
+        if (!TryGetCurrentUserId(out var currentUserId))
+            return Unauthorized();
 
         var command = new CreatePortfolioCommand(currentUserId, request.Name);
         var portfolio = await _createPortfolioHandler.HandleAsync(command, cancellationToken);
@@ -57,7 +55,10 @@ public sealed class PortfoliosController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<PortfolioResponse>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        var portfolio = await _getPortfolioByIdHandler.HandleAsync(new GetPortfolioByIdQuery(id), cancellationToken);
+        if (!TryGetCurrentUserId(out var currentUserId))
+            return Unauthorized();
+
+        var portfolio = await _getPortfolioByIdHandler.HandleAsync(new GetPortfolioByIdQuery(id), currentUserId, cancellationToken);
         if (portfolio is null)
         {
             return NotFound();
@@ -73,6 +74,9 @@ public sealed class PortfoliosController : ControllerBase
     [HttpPost("{id:guid}/positions")]
     public async Task<ActionResult<PortfolioResponse>> AddPositionAsync(Guid id, [FromBody] AddPositionRequest request, CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var currentUserId))
+            return Unauthorized();
+
         var command = new AddPositionCommand(
             id,
             request.Symbol,
@@ -80,8 +84,14 @@ public sealed class PortfoliosController : ControllerBase
             request.Quantity,
             request.AverageCost);
 
-        var portfolio = await _addPositionHandler.HandleAsync(command, cancellationToken);
+        var portfolio = await _addPositionHandler.HandleAsync(command, currentUserId, cancellationToken);
         return Ok(ToResponse(portfolio));
+    }
+
+    private bool TryGetCurrentUserId(out Guid userId)
+    {
+        return Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out userId)
+            && userId != Guid.Empty;
     }
 
     /// <summary>

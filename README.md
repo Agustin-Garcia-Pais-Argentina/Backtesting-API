@@ -149,6 +149,8 @@ The complete request sequence is: register, login, create a portfolio, add a pos
 
 The current MVP intentionally uses in-memory repositories and an in-memory backtest execution store. This keeps local setup fast and makes the workflow deterministic; users, portfolios, market data, and backtest results are reset whenever the API restarts. PostgreSQL with EF Core is the next durable-persistence milestone, not a hidden production dependency.
 
+Protected portfolio operations are scoped to the authenticated user. A portfolio that belongs to another user is treated as not found, avoiding resource enumeration through the API.
+
 On startup, the API loads a fixed sample series for `AAPL`, `MSFT`, and `SPY` covering 2024-01-02 through 2024-01-04. This allows the market-data and backtest flows to be reproduced without an external provider.
 
 ## MVP flow

@@ -13,10 +13,16 @@ public sealed class AddPositionHandler
         _portfolioRepository = portfolioRepository;
     }
 
-    public async Task<Portfolio> HandleAsync(AddPositionCommand command, CancellationToken cancellationToken = default)
+    public async Task<Portfolio> HandleAsync(
+        AddPositionCommand command,
+        Guid currentUserId,
+        CancellationToken cancellationToken = default)
     {
         var portfolio = await _portfolioRepository.GetByIdAsync(command.PortfolioId, cancellationToken)
-            ?? throw new InvalidOperationException($"Portfolio '{command.PortfolioId}' was not found.");
+            ?? throw new InvalidOperationException("Portfolio was not found.");
+
+        if (portfolio.UserId != currentUserId)
+            throw new InvalidOperationException("Portfolio was not found.");
 
         var position = new Position(
             portfolio.Id,

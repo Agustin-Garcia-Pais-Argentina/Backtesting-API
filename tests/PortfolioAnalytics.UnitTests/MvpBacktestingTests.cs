@@ -1,6 +1,7 @@
 using PortfolioAnalytics.Application.Commands;
 using PortfolioAnalytics.Application.DTOs;
 using PortfolioAnalytics.Application.Handlers;
+using PortfolioAnalytics.Application.Queries;
 using PortfolioAnalytics.Application.Services;
 using PortfolioAnalytics.Domain.Entities;
 using PortfolioAnalytics.Domain.Enums;
@@ -142,6 +143,39 @@ public class MvpBacktestingTests
     }
 
     [Fact]
+    public async Task GetPortfolioByIdHandler_ShouldHidePortfolioOwnedByAnotherUser()
+    {
+        var repository = new InMemoryPortfolioRepository();
+        var ownerId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var portfolio = new Portfolio(ownerId, "Private Portfolio");
+        await repository.AddAsync(portfolio);
+        var handler = new GetPortfolioByIdHandler(repository);
+
+        var result = await handler.HandleAsync(new GetPortfolioByIdQuery(portfolio.Id), otherUserId);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task AddPositionHandler_ShouldRejectPortfolioOwnedByAnotherUser()
+    {
+        var repository = new InMemoryPortfolioRepository();
+        var ownerId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var portfolio = new Portfolio(ownerId, "Private Portfolio");
+        await repository.AddAsync(portfolio);
+        var handler = new AddPositionHandler(repository);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            handler.HandleAsync(
+                new AddPositionCommand(portfolio.Id, "AAPL", AssetType.Stock, 1m, 100m),
+                otherUserId));
+
+        Assert.Equal("Portfolio was not found.", exception.Message);
+    }
+
+    [Fact]
     public void BacktestExecutionStore_ShouldKeepCompletedMetricsForLaterRetrieval()
     {
         var store = new BacktestExecutionStore();
@@ -154,12 +188,12 @@ public class MvpBacktestingTests
 
         store.Save(run);
 
-        var updated = store.Update(run.Id, savedRun =>
+        var updated = store.Update(run.Id, savedRun => savedRun with
         {
-            savedRun.Status = "Completed";
-            savedRun.TotalReturn = 0.15m;
-            savedRun.TradeCount = 1;
-            savedRun.CompletedAt = DateTime.UtcNow;
+            Status = "Completed",
+            TotalReturn = 0.15m,
+            TradeCount = 1,
+            CompletedAt = DateTime.UtcNow
         });
 
         var result = store.GetById(run.Id);
