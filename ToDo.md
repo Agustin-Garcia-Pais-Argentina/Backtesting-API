@@ -82,6 +82,52 @@ This is the exact sequence we should close before declaring the MVP ready for a 
 - Status: completed. `/health` provides a basic liveness check, the middleware logs unhandled failures, and README documents the demo flow.
 - Future improvements: observability, dashboards, tracing, and performance metrics.
 
+## FIX NOW - API security, correctness, and resilience
+
+These fixes must be completed before exposing the API outside a trusted local development environment. They address issues found during the .NET API review and take priority over new product features.
+
+### FIX NOW 1. Isolate backtests by authenticated user — **PENDING**
+- Objective: prevent one authenticated user from listing or reading backtest runs created by another user.
+- What to do: associate every `BacktestRunResponse` and queued `BacktestWorkItem` with the `UserId` extracted from the JWT. Filter recent runs by that owner and return not found when a requested run belongs to another user.
+- How to do it: add `UserId` to the backtest request/response flow, pass it from `BacktestsController` into the command and queue item, and update `BacktestExecutionStore.GetRecent` and `GetById` to require the current user identifier. Preserve the existing portfolio ownership pattern so cross-user resources are not enumerable.
+- Where: `src/PortfolioAnalytics.Api/Controllers/BacktestsController.cs`, `src/PortfolioAnalytics.Application/Commands/`, `src/PortfolioAnalytics.Application/DTOs/`, `src/PortfolioAnalytics.Application/Services/BacktestExecutionStore.cs`, and `src/PortfolioAnalytics.Application/Services/BacktestExecutionQueue.cs`.
+- Validation: add tests proving that a user can read only their own queued, running, completed, and failed backtests.
+
+### FIX NOW 2. Remove the known fallback JWT key outside Development — **PENDING**
+- Objective: ensure a deployment cannot run with a publicly known signing secret.
+- What to do: keep a development-only local fallback if desired, but fail application startup in non-Development environments when `Jwt:Key` is missing or too weak. Require a sufficiently long secret supplied through configuration or an environment variable.
+- How to do it: validate JWT settings during service registration, use `IHostEnvironment` to distinguish Development from other environments, and configure production values through `Jwt__Key`, `Jwt__Issuer`, and `Jwt__Audience`. Do not log the secret.
+- Where: `src/PortfolioAnalytics.Api/Program.cs`, `src/PortfolioAnalytics.Infrastructure/Identity/JwtTokenService.cs`, `README.md`, and `.env.example`.
+- Validation: verify Development starts without extra configuration, while a non-Development startup fails clearly when the key is absent or invalid.
+
+### FIX NOW 3. Make singleton in-memory repositories thread-safe — **PENDING**
+- Objective: prevent data races and collection corruption when concurrent HTTP requests access the singleton repositories.
+- What to do: replace mutable `Dictionary` instances with `ConcurrentDictionary`, or protect compound reads and writes with a synchronization strategy. Keep returned collections as snapshots so callers cannot enumerate a collection while it is being modified.
+- How to do it: apply the same approach consistently to users, portfolios, and market data; review duplicate-check-then-insert flows because they must be atomic or explicitly documented as MVP limitations.
+- Where: `src/PortfolioAnalytics.Infrastructure/Repositories/InMemoryUserRepository.cs`, `src/PortfolioAnalytics.Infrastructure/Repositories/InMemoryPortfolioRepository.cs`, and `src/PortfolioAnalytics.Infrastructure/Repositories/InMemoryMarketDataRepository.cs`.
+- Validation: add concurrent repository tests for registration, portfolio updates, and market-data upserts, and confirm the existing unit suite remains green.
+
+### FIX NOW 4. Bound the backtest queue and honor request cancellation — **PENDING**
+- Objective: prevent unlimited queued work from exhausting memory and avoid accepting work after the client request has been cancelled.
+- What to do: configure a bounded channel with an explicit capacity, return a clear overload response when the queue is full, and pass the controller cancellation token to enqueue instead of `CancellationToken.None`.
+- How to do it: use a bounded `Channel<BacktestWorkItem>` with a defined full-mode policy, handle the failed write in the controller, and preserve cancellation behavior in the background worker. Add rate limiting if the endpoint will be publicly reachable.
+- Where: `src/PortfolioAnalytics.Application/Services/BacktestExecutionQueue.cs`, `src/PortfolioAnalytics.Api/Controllers/BacktestsController.cs`, and `src/PortfolioAnalytics.Api/Backtesting/BacktestExecutionWorker.cs`.
+- Validation: test queue-full behavior, request cancellation, and that accepted jobs still transition correctly through queued, running, completed, and failed states.
+
+### FIX NOW 5. Enforce complete OHLCV financial-data validation — **PENDING**
+- Objective: reject invalid market data before it can contaminate backtests and financial metrics.
+- What to do: require positive Open, High, Low, and Close prices; require non-negative volume; require `Low <= Open <= High` and `Low <= Close <= High`; and reject non-finite or otherwise invalid numeric values if the input type is later changed to floating point.
+- How to do it: centralize these invariants in the `MarketDataPoint` domain constructor so every ingestion path receives the same protection, then map the resulting validation exceptions to the established 400/422 contract.
+- Where: `src/PortfolioAnalytics.Domain/Entities/MarketDataPoint.cs` and related market-data request/handler tests.
+- Validation: add tests for each invalid OHLCV combination and for a valid boundary case.
+
+### FIX NOW 6. Reject reversed market-data date ranges — **PENDING**
+- Objective: keep the market-data API contract consistent by rejecting `from` dates later than `to`.
+- What to do: return `400 Bad Request` with the standard error shape when the range is reversed, rather than returning `200 OK` with an empty collection.
+- How to do it: after parsing both query parameters in `MarketDataController`, check `fromDate > toDate` and use the same validation response used by the other invalid request cases. Add the condition to the negative API/Postman test collection.
+- Where: `src/PortfolioAnalytics.Api/Controllers/MarketDataController.cs` and API contract tests.
+- Validation: cover equal dates, a valid ascending range, and a reversed range.
+
 ## What comes after the MVP: product, technical, and integration improvements
 
 Once the project is already useful and stable, the remaining work shifts from "basic functionality" to "scaling and quality".
