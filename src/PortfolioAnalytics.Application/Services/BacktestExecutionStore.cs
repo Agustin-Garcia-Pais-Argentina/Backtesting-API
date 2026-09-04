@@ -17,6 +17,11 @@ public sealed class BacktestExecutionStore
         return run;
     }
 
+    public bool Remove(Guid id)
+    {
+        return _runs.TryRemove(id, out _);
+    }
+
     public bool Update(Guid id, Func<BacktestRunResponse, BacktestRunResponse> update)
     {
         ArgumentNullException.ThrowIfNull(update);

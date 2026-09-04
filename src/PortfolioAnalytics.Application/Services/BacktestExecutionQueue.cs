@@ -8,17 +8,56 @@ namespace PortfolioAnalytics.Application.Services;
 /// </summary>
 public sealed class BacktestExecutionQueue
 {
-    private readonly Channel<BacktestWorkItem> _queue = Channel.CreateUnbounded<BacktestWorkItem>();
+    public const int DefaultCapacity = 100;
+
+    private readonly Channel<BacktestWorkItem> _queue;
+
+    public BacktestExecutionQueue(int capacity = DefaultCapacity)
+    {
+        if (capacity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(capacity), "Queue capacity must be greater than zero.");
+        }
+
+        Capacity = capacity;
+        _queue = Channel.CreateBounded<BacktestWorkItem>(new BoundedChannelOptions(capacity)
+        {
+            FullMode = BoundedChannelFullMode.Wait,
+            SingleReader = true,
+            SingleWriter = false
+        });
+    }
+
+    public int Capacity { get; }
 
     public ValueTask EnqueueAsync(BacktestWorkItem workItem, CancellationToken cancellationToken = default)
     {
-        return _queue.Writer.WriteAsync(workItem, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (_queue.Writer.TryWrite(workItem))
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromException(new BacktestQueueFullException(Capacity));
     }
 
     public IAsyncEnumerable<BacktestWorkItem> ReadAllAsync(CancellationToken cancellationToken)
     {
         return _queue.Reader.ReadAllAsync(cancellationToken);
     }
+}
+
+public sealed class BacktestQueueFullException : InvalidOperationException
+{
+    public BacktestQueueFullException(int capacity)
+        : base($"The backtest queue is full (capacity: {capacity}).")
+    {
+        Capacity = capacity;
+    }
+
+    public int Capacity { get; }
 }
 
 public sealed record BacktestWorkItem(Guid RunId, Guid UserId, RunBacktestCommand Command)

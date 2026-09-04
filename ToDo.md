@@ -102,19 +102,21 @@ These fixes must be completed before exposing the API outside a trusted local de
 - Status: completed. Startup loads one validated `JwtSettings` instance. Development may use the local fallback, while every other environment fails before service registration when `Jwt:Key` is missing or shorter than 32 characters. Authentication and token generation use the same validated settings, and no secret is logged.
 - Validation: focused unit tests cover the Development fallback, missing/weak non-Development keys, and valid configured settings; the API build also verifies composition-root wiring.
 
-### FIX NOW 3. Make singleton in-memory repositories thread-safe — **PENDING**
+### FIX NOW 3. Make singleton in-memory repositories thread-safe — **DONE**
 - Objective: prevent data races and collection corruption when concurrent HTTP requests access the singleton repositories.
 - What to do: replace mutable `Dictionary` instances with `ConcurrentDictionary`, or protect compound reads and writes with a synchronization strategy. Keep returned collections as snapshots so callers cannot enumerate a collection while it is being modified.
 - How to do it: apply the same approach consistently to users, portfolios, and market data; review duplicate-check-then-insert flows because they must be atomic or explicitly documented as MVP limitations.
 - Where: `src/PortfolioAnalytics.Infrastructure/Repositories/InMemoryUserRepository.cs`, `src/PortfolioAnalytics.Infrastructure/Repositories/InMemoryPortfolioRepository.cs`, and `src/PortfolioAnalytics.Infrastructure/Repositories/InMemoryMarketDataRepository.cs`.
-- Validation: add concurrent repository tests for registration, portfolio updates, and market-data upserts, and confirm the existing unit suite remains green.
+- Status: completed. Singleton repositories now use concurrent dictionaries, lock compound user writes and portfolio repository operations, and return materialized query snapshots. Portfolio position duplicate-check/add is synchronized inside the aggregate so concurrent read-modify-write requests do not corrupt the position collection. Uniqueness is guaranteed only within this process; the PostgreSQL unique index remains the durable invariant.
+- Validation: focused xUnit tests cover concurrent user registration attempts, portfolio position updates, and market-data upserts/snapshots; the existing unit suite remains green.
 
-### FIX NOW 4. Bound the backtest queue and honor request cancellation — **PENDING**
+### FIX NOW 4. Bound the backtest queue and honor request cancellation — **DONE**
 - Objective: prevent unlimited queued work from exhausting memory and avoid accepting work after the client request has been cancelled.
 - What to do: configure a bounded channel with an explicit capacity, return a clear overload response when the queue is full, and pass the controller cancellation token to enqueue instead of `CancellationToken.None`.
 - How to do it: use a bounded `Channel<BacktestWorkItem>` with a defined full-mode policy, handle the failed write in the controller, and preserve cancellation behavior in the background worker. Add rate limiting if the endpoint will be publicly reachable.
 - Where: `src/PortfolioAnalytics.Application/Services/BacktestExecutionQueue.cs`, `src/PortfolioAnalytics.Api/Controllers/BacktestsController.cs`, and `src/PortfolioAnalytics.Api/Backtesting/BacktestExecutionWorker.cs`.
-- Validation: test queue-full behavior, request cancellation, and that accepted jobs still transition correctly through queued, running, completed, and failed states.
+- Status: completed. The in-process queue uses a bounded channel with an explicit capacity of 100 and immediate full detection. The controller passes its request token to enqueue, removes the provisional run when enqueue is cancelled or overloaded, returns `503 Service Unavailable` when full, and leaves the worker's shutdown cancellation behavior unchanged.
+- Validation: focused xUnit tests cover queue saturation, cancelled requests, accepted queued responses, and worker transition to `Completed`. Queue state remains process-local and is lost on restart; a PostgreSQL-backed durable queue/run store is the fallback before multi-instance or production deployment.
 
 ### FIX NOW 5. Enforce complete OHLCV financial-data validation — **PENDING**
 - Objective: reject invalid market data before it can contaminate backtests and financial metrics.

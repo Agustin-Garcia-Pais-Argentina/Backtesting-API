@@ -71,12 +71,32 @@ public sealed class BacktestsController : ControllerBase
         };
 
         _executionStore.Save(response);
-        await _executionQueue.EnqueueAsync(
-            new BacktestWorkItem(
-                response.Id,
-                currentUserId,
-                new RunBacktestCommand(currentUserId, request.Symbol, request.StartDate, request.EndDate, request.InitialCapital)),
-            CancellationToken.None);
+        try
+        {
+            await _executionQueue.EnqueueAsync(
+                new BacktestWorkItem(
+                    response.Id,
+                    currentUserId,
+                    new RunBacktestCommand(currentUserId, request.Symbol, request.StartDate, request.EndDate, request.InitialCapital)),
+                cancellationToken);
+        }
+        catch (BacktestQueueFullException)
+        {
+            _executionStore.Remove(response.Id);
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new ProblemDetails
+                {
+                    Status = StatusCodes.Status503ServiceUnavailable,
+                    Title = "Backtest queue is full.",
+                    Detail = "The backtest could not be queued. Please try again later."
+                });
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            _executionStore.Remove(response.Id);
+            throw;
+        }
 
         return AcceptedAtRoute("GetBacktestById", new { id = response.Id }, response);
     }

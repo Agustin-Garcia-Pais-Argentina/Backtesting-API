@@ -20,6 +20,7 @@
     <ProjectReference Include="..\..\src\PortfolioAnalytics.Domain\PortfolioAnalytics.Domain.csproj" />
     <ProjectReference Include="..\..\src\PortfolioAnalytics.Application\PortfolioAnalytics.Application.csproj" />
     <ProjectReference Include="..\..\src\PortfolioAnalytics.Infrastructure\PortfolioAnalytics.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\PortfolioAnalytics.Api\PortfolioAnalytics.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>

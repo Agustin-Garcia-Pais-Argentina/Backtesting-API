@@ -9,11 +9,23 @@ namespace PortfolioAnalytics.Domain.Entities;
 /// </summary>
 public class Portfolio
 {
+    private readonly object _positionsSyncRoot = new();
+    private readonly List<Position> _positions = new();
+
     public Guid Id { get; private set; } = Guid.NewGuid();
     public Guid UserId { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
-    public ICollection<Position> Positions { get; private set; } = new List<Position>();
+    public ICollection<Position> Positions
+    {
+        get
+        {
+            lock (_positionsSyncRoot)
+            {
+                return _positions.ToList();
+            }
+        }
+    }
 
     /// <summary>
     /// The constructor enforces the minimum invariants of a valid portfolio.
@@ -40,18 +52,24 @@ public class Portfolio
         if (position is null)
             throw new ArgumentNullException(nameof(position));
 
-        if (Positions.Any(existing => existing.Symbol == position.Symbol))
-            throw new InvalidOperationException($"A position for symbol '{position.Symbol}' already exists in this portfolio.");
+        lock (_positionsSyncRoot)
+        {
+            if (_positions.Any(existing => existing.Symbol == position.Symbol))
+                throw new InvalidOperationException($"A position for symbol '{position.Symbol}' already exists in this portfolio.");
 
-        Positions.Add(position);
+            _positions.Add(position);
+        }
     }
 
     public void RemovePosition(string symbol)
     {
-        var position = Positions.FirstOrDefault(x => x.Symbol == symbol);
-        if (position is null)
-            throw new InvalidOperationException($"No position found for symbol '{symbol}'.");
+        lock (_positionsSyncRoot)
+        {
+            var position = _positions.FirstOrDefault(x => x.Symbol == symbol);
+            if (position is null)
+                throw new InvalidOperationException($"No position found for symbol '{symbol}'.");
 
-        Positions.Remove(position);
+            _positions.Remove(position);
+        }
     }
 }

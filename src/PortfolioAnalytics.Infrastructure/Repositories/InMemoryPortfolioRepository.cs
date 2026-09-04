@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using PortfolioAnalytics.Domain.Entities;
 using PortfolioAnalytics.Domain.Interfaces;
 
@@ -10,39 +11,65 @@ namespace PortfolioAnalytics.Infrastructure.Repositories;
 /// </summary>
 public sealed class InMemoryPortfolioRepository : IPortfolioRepository
 {
-    private readonly Dictionary<Guid, Portfolio> _portfolios = new();
+    private readonly ConcurrentDictionary<Guid, Portfolio> _portfolios = new();
+    private readonly object _syncRoot = new();
 
     public Task AddAsync(Portfolio portfolio, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        _portfolios[portfolio.Id] = portfolio;
+
+        lock (_syncRoot)
+        {
+            _portfolios[portfolio.Id] = portfolio;
+        }
+
         return Task.CompletedTask;
     }
 
     public Task UpdateAsync(Portfolio portfolio, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        _portfolios[portfolio.Id] = portfolio;
+
+        lock (_syncRoot)
+        {
+            _portfolios[portfolio.Id] = portfolio;
+        }
+
         return Task.CompletedTask;
     }
 
     public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        _portfolios.Remove(id);
+
+        lock (_syncRoot)
+        {
+            _portfolios.TryRemove(id, out _);
+        }
+
         return Task.CompletedTask;
     }
 
     public Task<Portfolio?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult(_portfolios.TryGetValue(id, out var portfolio) ? portfolio : null);
+
+        lock (_syncRoot)
+        {
+            return Task.FromResult(_portfolios.TryGetValue(id, out var portfolio) ? portfolio : null);
+        }
     }
 
     public Task<IEnumerable<Portfolio>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var userPortfolios = _portfolios.Values.Where(portfolio => portfolio.UserId == userId).ToList();
-        return Task.FromResult<IEnumerable<Portfolio>>(userPortfolios);
+
+        lock (_syncRoot)
+        {
+            var userPortfolios = _portfolios.Values
+                .Where(portfolio => portfolio.UserId == userId)
+                .ToList();
+            return Task.FromResult<IEnumerable<Portfolio>>(userPortfolios);
+        }
     }
 }

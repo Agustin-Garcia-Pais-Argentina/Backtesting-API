@@ -231,6 +231,12 @@ The application organizes logic into commands, queries, and handlers. This keeps
 ### Backtest ownership boundary
 Backtest runs are isolated by the authenticated user's `ClaimTypes.NameIdentifier`. The API rejects requests without a valid user identifier, copies the identifier into the response, command, and queued work item, and filters both recent and individual run reads by that owner. A run belonging to another user is returned as not found rather than revealing that it exists. The in-memory queue/store remains the MVP implementation; when durable storage is introduced, `UserId` must remain a persisted field and part of every read predicate rather than falling back to unscoped lookups.
 
+### Thread-safe in-memory MVP persistence
+The singleton in-memory repositories use `ConcurrentDictionary` and synchronize compound operations where a single concurrent-dictionary operation is not enough. User email and identifier insertion is protected as one operation, portfolio repository updates and query materialization are protected by a repository lock, and the `Portfolio` aggregate synchronizes position duplicate-check/add and exposes a materialized collection snapshot. Market-data queries materialize values before filtering, while concurrent upserts retain the existing symbol/date/source deduplication behavior. These are process-local safeguards, not a substitute for PostgreSQL transactions and unique indexes.
+
+### Bounded backtest execution
+The API-hosted MVP worker consumes a bounded in-memory channel with capacity 100. Enqueue is intentionally non-blocking: a full channel produces a clear `503 Service Unavailable` response, and the HTTP request cancellation token is checked and propagated before accepting a work item. The worker continues to use the host stopping token, allowing graceful processing cancellation during shutdown while recording normal execution failures. Queued work and in-memory run state are lost on process restart and are not shared between API instances; before production or horizontal scaling, move run state and jobs to PostgreSQL with a durable queue/claim transaction (or an equivalent durable messaging service).
+
 ### Domain first
 The most important rules live in entities and domain validations before they appear in controllers or infrastructure services.
 

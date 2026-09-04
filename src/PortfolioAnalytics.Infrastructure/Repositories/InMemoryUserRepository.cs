@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using PortfolioAnalytics.Domain.Entities;
 using PortfolioAnalytics.Domain.Interfaces;
 
@@ -10,8 +11,9 @@ namespace PortfolioAnalytics.Infrastructure.Repositories;
 /// </summary>
 public sealed class InMemoryUserRepository : IUserRepository
 {
-    private readonly Dictionary<Guid, User> _usersById = new();
-    private readonly Dictionary<string, User> _usersByEmail = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<Guid, User> _usersById = new();
+    private readonly ConcurrentDictionary<string, User> _usersByEmail = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _syncRoot = new();
 
     /// <summary>
     /// Stores a user by both identifier and normalized email.
@@ -19,8 +21,24 @@ public sealed class InMemoryUserRepository : IUserRepository
     public Task AddAsync(User user, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        _usersById[user.Id] = user;
-        _usersByEmail[user.Email] = user;
+
+        lock (_syncRoot)
+        {
+            var normalizedEmail = user.Email.Trim();
+            if (_usersByEmail.ContainsKey(normalizedEmail))
+            {
+                throw new InvalidOperationException("A user with this email already exists.");
+            }
+
+            if (_usersById.ContainsKey(user.Id))
+            {
+                throw new InvalidOperationException("A user with this identifier already exists.");
+            }
+
+            _usersById[user.Id] = user;
+            _usersByEmail[normalizedEmail] = user;
+        }
+
         return Task.CompletedTask;
     }
 
@@ -30,7 +48,11 @@ public sealed class InMemoryUserRepository : IUserRepository
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult(_usersByEmail.TryGetValue(email.Trim(), out var user) ? user : null);
+
+        lock (_syncRoot)
+        {
+            return Task.FromResult(_usersByEmail.TryGetValue(email.Trim(), out var user) ? user : null);
+        }
     }
 
     /// <summary>
@@ -39,6 +61,10 @@ public sealed class InMemoryUserRepository : IUserRepository
     public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult(_usersById.TryGetValue(id, out var user) ? user : null);
+
+        lock (_syncRoot)
+        {
+            return Task.FromResult(_usersById.TryGetValue(id, out var user) ? user : null);
+        }
     }
 }

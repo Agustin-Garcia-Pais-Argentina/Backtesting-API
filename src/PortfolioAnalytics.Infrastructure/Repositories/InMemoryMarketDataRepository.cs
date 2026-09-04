@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using PortfolioAnalytics.Domain.Entities;
 using PortfolioAnalytics.Domain.Interfaces;
 
@@ -9,7 +10,7 @@ namespace PortfolioAnalytics.Infrastructure.Repositories;
 /// </summary>
 public sealed class InMemoryMarketDataRepository : IMarketDataRepository
 {
-    private readonly Dictionary<string, MarketDataPoint> _pointsByKey = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, MarketDataPoint> _pointsByKey = new(StringComparer.OrdinalIgnoreCase);
 
     public Task AddRangeAsync(IEnumerable<MarketDataPoint> points, CancellationToken cancellationToken = default)
     {
@@ -17,6 +18,7 @@ public sealed class InMemoryMarketDataRepository : IMarketDataRepository
 
         foreach (var point in points ?? Enumerable.Empty<MarketDataPoint>())
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var key = BuildKey(point.Symbol, point.Date, point.Source);
             _pointsByKey[key] = point;
         }
@@ -30,6 +32,7 @@ public sealed class InMemoryMarketDataRepository : IMarketDataRepository
 
         var normalizedSymbol = symbol.Trim();
         var result = _pointsByKey.Values
+            .ToList()
             .Where(point => point.Symbol.Equals(normalizedSymbol, StringComparison.OrdinalIgnoreCase))
             .Where(point => point.Date >= from && point.Date <= to)
             .OrderBy(point => point.Date)
@@ -43,7 +46,7 @@ public sealed class InMemoryMarketDataRepository : IMarketDataRepository
     /// </summary>
     public void SeedSampleData()
     {
-        if (_pointsByKey.Count > 0)
+        if (!_pointsByKey.IsEmpty)
         {
             return;
         }
@@ -63,7 +66,7 @@ public sealed class InMemoryMarketDataRepository : IMarketDataRepository
 
         foreach (var point in samplePoints)
         {
-            _pointsByKey[BuildKey(point.Symbol, point.Date, point.Source)] = point;
+            _pointsByKey.TryAdd(BuildKey(point.Symbol, point.Date, point.Source), point);
         }
     }
 
