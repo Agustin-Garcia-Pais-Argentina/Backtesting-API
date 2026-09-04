@@ -86,12 +86,13 @@ This is the exact sequence we should close before declaring the MVP ready for a 
 
 These fixes must be completed before exposing the API outside a trusted local development environment. They address issues found during the .NET API review and take priority over new product features.
 
-### FIX NOW 1. Isolate backtests by authenticated user — **PENDING**
+### FIX NOW 1. Isolate backtests by authenticated user — **DONE**
 - Objective: prevent one authenticated user from listing or reading backtest runs created by another user.
 - What to do: associate every `BacktestRunResponse` and queued `BacktestWorkItem` with the `UserId` extracted from the JWT. Filter recent runs by that owner and return not found when a requested run belongs to another user.
 - How to do it: add `UserId` to the backtest request/response flow, pass it from `BacktestsController` into the command and queue item, and update `BacktestExecutionStore.GetRecent` and `GetById` to require the current user identifier. Preserve the existing portfolio ownership pattern so cross-user resources are not enumerable.
 - Where: `src/PortfolioAnalytics.Api/Controllers/BacktestsController.cs`, `src/PortfolioAnalytics.Application/Commands/`, `src/PortfolioAnalytics.Application/DTOs/`, `src/PortfolioAnalytics.Application/Services/BacktestExecutionStore.cs`, and `src/PortfolioAnalytics.Application/Services/BacktestExecutionQueue.cs`.
-- Validation: add tests proving that a user can read only their own queued, running, completed, and failed backtests.
+- Status: completed. The controller extracts `ClaimTypes.NameIdentifier`, stores it on the response, command, and queue item, and requires the same owner for recent and individual run reads. Requests with a missing or invalid identity are unauthorized, while another user's run is indistinguishable from a missing run (`404 Not Found`).
+- Validation: focused unit tests prove owner filtering for queued, running, completed, and failed backtests and verify that queue items carry the authenticated owner.
 
 ### FIX NOW 2. Remove the known fallback JWT key outside Development — **PENDING**
 - Objective: ensure a deployment cannot run with a publicly known signing secret.

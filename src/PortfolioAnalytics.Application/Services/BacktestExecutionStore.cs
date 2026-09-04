@@ -33,15 +33,27 @@ public sealed class BacktestExecutionStore
         return false;
     }
 
-    public BacktestRunResponse? GetById(Guid id)
+    public BacktestRunResponse? GetById(Guid id, Guid userId)
     {
-        _runs.TryGetValue(id, out var run);
-        return run;
+        if (userId == Guid.Empty)
+        {
+            return null;
+        }
+
+        return _runs.TryGetValue(id, out var run) && run.UserId == userId
+            ? run
+            : null;
     }
 
-    public IReadOnlyCollection<BacktestRunResponse> GetRecent(int limit = 20)
+    public IReadOnlyCollection<BacktestRunResponse> GetRecent(Guid userId, int limit = 20)
     {
+        if (userId == Guid.Empty)
+        {
+            return Array.Empty<BacktestRunResponse>();
+        }
+
         return _runs.Values
+            .Where(run => run.UserId == userId)
             .OrderByDescending(run => run.CreatedAt)
             .Take(limit)
             .ToList();

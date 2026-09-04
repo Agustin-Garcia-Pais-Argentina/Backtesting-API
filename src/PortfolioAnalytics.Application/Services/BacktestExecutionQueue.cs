@@ -21,4 +21,12 @@ public sealed class BacktestExecutionQueue
     }
 }
 
-public sealed record BacktestWorkItem(Guid RunId, RunBacktestCommand Command);
+public sealed record BacktestWorkItem(Guid RunId, Guid UserId, RunBacktestCommand Command)
+{
+    // Compatibility constructor for non-HTTP callers; authenticated API requests use
+    // the explicit owner-aware constructor below.
+    public BacktestWorkItem(Guid runId, RunBacktestCommand command)
+        : this(runId, command.UserId, command)
+    {
+    }
+}

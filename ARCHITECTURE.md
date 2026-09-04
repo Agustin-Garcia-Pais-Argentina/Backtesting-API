@@ -228,6 +228,9 @@ The infrastructure layer defines repository abstractions so the application does
 ### CQRS-oriented application layer
 The application organizes logic into commands, queries, and handlers. This keeps reading and writing separate, preserves clarity, and prepares the codebase for growth without mixing responsibilities.
 
+### Backtest ownership boundary
+Backtest runs are isolated by the authenticated user's `ClaimTypes.NameIdentifier`. The API rejects requests without a valid user identifier, copies the identifier into the response, command, and queued work item, and filters both recent and individual run reads by that owner. A run belonging to another user is returned as not found rather than revealing that it exists. The in-memory queue/store remains the MVP implementation; when durable storage is introduced, `UserId` must remain a persisted field and part of every read predicate rather than falling back to unscoped lookups.
+
 ### Domain first
 The most important rules live in entities and domain validations before they appear in controllers or infrastructure services.
 

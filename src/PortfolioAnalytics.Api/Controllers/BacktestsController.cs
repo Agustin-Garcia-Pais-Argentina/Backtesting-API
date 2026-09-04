@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PortfolioAnalytics.Application.Commands;
@@ -51,9 +52,15 @@ public sealed class BacktestsController : ControllerBase
             return BadRequest("Initial capital must be greater than zero.");
         }
 
+        if (!TryGetCurrentUserId(out var currentUserId))
+        {
+            return Unauthorized();
+        }
+
         var response = new BacktestRunResponse
         {
             Id = Guid.NewGuid(),
+            UserId = currentUserId,
             Symbol = request.Symbol,
             StartDate = request.StartDate,
             EndDate = request.EndDate,
@@ -67,7 +74,8 @@ public sealed class BacktestsController : ControllerBase
         await _executionQueue.EnqueueAsync(
             new BacktestWorkItem(
                 response.Id,
-                new RunBacktestCommand(request.Symbol, request.StartDate, request.EndDate, request.InitialCapital)),
+                currentUserId,
+                new RunBacktestCommand(currentUserId, request.Symbol, request.StartDate, request.EndDate, request.InitialCapital)),
             CancellationToken.None);
 
         return AcceptedAtRoute("GetBacktestById", new { id = response.Id }, response);
@@ -79,7 +87,12 @@ public sealed class BacktestsController : ControllerBase
     [HttpGet]
     public ActionResult<IEnumerable<BacktestRunResponse>> GetRecentAsync()
     {
-        return Ok(_executionStore.GetRecent());
+        if (!TryGetCurrentUserId(out var currentUserId))
+        {
+            return Unauthorized();
+        }
+
+        return Ok(_executionStore.GetRecent(currentUserId));
     }
 
     /// <summary>
@@ -88,12 +101,23 @@ public sealed class BacktestsController : ControllerBase
     [HttpGet("{id:guid}", Name = "GetBacktestById")]
     public ActionResult<BacktestRunResponse> GetByIdAsync(Guid id)
     {
-        var result = _executionStore.GetById(id);
+        if (!TryGetCurrentUserId(out var currentUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result = _executionStore.GetById(id, currentUserId);
         if (result is null)
         {
             return NotFound();
         }
 
         return Ok(result);
+    }
+
+    private bool TryGetCurrentUserId(out Guid userId)
+    {
+        return Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out userId)
+            && userId != Guid.Empty;
     }
 }
