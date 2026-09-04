@@ -94,12 +94,13 @@ These fixes must be completed before exposing the API outside a trusted local de
 - Status: completed. The controller extracts `ClaimTypes.NameIdentifier`, stores it on the response, command, and queue item, and requires the same owner for recent and individual run reads. Requests with a missing or invalid identity are unauthorized, while another user's run is indistinguishable from a missing run (`404 Not Found`).
 - Validation: focused unit tests prove owner filtering for queued, running, completed, and failed backtests and verify that queue items carry the authenticated owner.
 
-### FIX NOW 2. Remove the known fallback JWT key outside Development — **PENDING**
+### FIX NOW 2. Remove the known fallback JWT key outside Development — **DONE**
 - Objective: ensure a deployment cannot run with a publicly known signing secret.
 - What to do: keep a development-only local fallback if desired, but fail application startup in non-Development environments when `Jwt:Key` is missing or too weak. Require a sufficiently long secret supplied through configuration or an environment variable.
 - How to do it: validate JWT settings during service registration, use `IHostEnvironment` to distinguish Development from other environments, and configure production values through `Jwt__Key`, `Jwt__Issuer`, and `Jwt__Audience`. Do not log the secret.
-- Where: `src/PortfolioAnalytics.Api/Program.cs`, `src/PortfolioAnalytics.Infrastructure/Identity/JwtTokenService.cs`, `README.md`, and `.env.example`.
-- Validation: verify Development starts without extra configuration, while a non-Development startup fails clearly when the key is absent or invalid.
+- Where: `src/PortfolioAnalytics.Api/Program.cs`, `src/PortfolioAnalytics.Infrastructure/Identity/JwtSettings.cs`, `src/PortfolioAnalytics.Infrastructure/Identity/JwtTokenService.cs`, `tests/PortfolioAnalytics.UnitTests/JwtSettingsTests.cs`, `README.md`, and `.env.example`.
+- Status: completed. Startup loads one validated `JwtSettings` instance. Development may use the local fallback, while every other environment fails before service registration when `Jwt:Key` is missing or shorter than 32 characters. Authentication and token generation use the same validated settings, and no secret is logged.
+- Validation: focused unit tests cover the Development fallback, missing/weak non-Development keys, and valid configured settings; the API build also verifies composition-root wiring.
 
 ### FIX NOW 3. Make singleton in-memory repositories thread-safe — **PENDING**
 - Objective: prevent data races and collection corruption when concurrent HTTP requests access the singleton repositories.

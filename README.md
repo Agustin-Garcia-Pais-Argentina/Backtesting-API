@@ -112,12 +112,14 @@ docker compose down -v
 
 PostgreSQL does not need to be installed or running on the host. Docker Desktop and a free local port are enough. `.env` is local configuration and must not be committed.
 
-4. Configure JWT (optional for local development):
+4. Configure JWT:
 
-The API has a development-only fallback key, but deployments should provide a unique secret through configuration:
+Development uses a local-only fallback key. Every non-Development deployment must provide a
+unique `Jwt:Key` with at least 32 characters through configuration or environment variables.
+The key is never written to logs:
 
 ```powershell
-$env:Jwt__Key = "replace-with-a-long-random-secret"
+$env:Jwt__Key = "replace-with-a-long-random-secret-at-least-32-chars"
 $env:Jwt__Issuer = "PortfolioAnalytics"
 $env:Jwt__Audience = "PortfolioAnalyticsUsers"
 ```

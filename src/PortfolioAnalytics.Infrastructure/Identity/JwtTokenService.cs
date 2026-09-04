@@ -1,7 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using PortfolioAnalytics.Application.Abstractions;
 using PortfolioAnalytics.Domain.Entities;
@@ -14,11 +13,12 @@ namespace PortfolioAnalytics.Infrastructure.Identity;
 /// </summary>
 public sealed class JwtTokenService : ITokenService
 {
-    private readonly IConfiguration _configuration;
+    private readonly JwtSettings _settings;
 
-    public JwtTokenService(IConfiguration configuration)
+    public JwtTokenService(JwtSettings settings)
     {
-        _configuration = configuration;
+        ArgumentNullException.ThrowIfNull(settings);
+        _settings = settings;
     }
 
     /// <summary>
@@ -26,11 +26,7 @@ public sealed class JwtTokenService : ITokenService
     /// </summary>
     public string GenerateToken(User user)
     {
-        var key = _configuration["Jwt:Key"] ?? "ThisIsATestKeyForLocalDevelopmentOnly_1234567890";
-        var issuer = _configuration["Jwt:Issuer"] ?? "PortfolioAnalytics";
-        var audience = _configuration["Jwt:Audience"] ?? "PortfolioAnalyticsUsers";
-
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Key));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
@@ -42,8 +38,8 @@ public sealed class JwtTokenService : ITokenService
         };
 
         var token = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
+            issuer: _settings.Issuer,
+            audience: _settings.Audience,
             claims: claims,
             expires: DateTime.UtcNow.AddHours(12),
             signingCredentials: credentials);
