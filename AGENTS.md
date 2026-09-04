@@ -67,23 +67,32 @@ The recommended order is:
 - Avoid overengineering with "pretty patterns".
 - Prioritize maintainability and readability.
 
-### 3.4. Keep the software testable
+### 3.4. Prefer simple and minimal solutions
+- Prefer the smallest solution that solves the current MVP problem.
+- Before adding an abstraction, framework, background service, pattern, or infrastructure component, identify the concrete problem it solves.
+- Do not introduce generic repositories, generic handlers, event buses, distributed queues, factories, or additional layers without a current use case.
+- Prefer direct code over abstraction when the behavior is simple and unlikely to vary.
+- Keep temporary MVP implementations clearly documented and avoid adding complexity to compensate for limitations that will be solved by PostgreSQL or durable infrastructure later.
+- Optimize for readability, maintainability, testability, and functional value before theoretical scalability.
+- When two solutions are equivalent, choose the one with fewer moving parts and fewer failure modes.
+
+### 3.5. Keep the software testable
 - Each major feature should be validated with unit or integration tests.
 - Do not leave critical logic untested.
 - Avoid coupling the code to tests, but design it so it can be tested.
 
-### 3.5. Use the right technology for the problem
+### 3.6. Use the right technology for the problem
 - .NET + ASP.NET Core + PostgreSQL + EF Core is the recommended base.
 - Use Dapper only when massive time-series queries truly require it.
 - Apply CQRS only when real complexity justifies it.
 - Use a worker only for actual heavy asynchronous tasks.
 
-### 3.6. Comment the code properly
+### 3.7. Comment the code properly
 - Add comments at code-block level, explaining purpose and how it works in a simple technical style.
 - Add a brief file-level description at the top of each file explaining its purpose.
 - Keep documentation current whenever an important architectural or workflow change alters project context.
 
-### 3.7. Apply .NET best practices within the project context
+### 3.8. Apply .NET best practices within the project context
 - Treat security configuration as fail-fast: never rely on known secrets or permissive production fallbacks.
 - Use strongly typed options and startup validation for security-sensitive and operational settings such as JWT, queue capacity, payload limits, and rate limits.
 - Use constructor injection with explicit null validation where dependencies can be supplied outside the default DI container, and choose service lifetimes deliberately. Singleton services must be thread-safe.

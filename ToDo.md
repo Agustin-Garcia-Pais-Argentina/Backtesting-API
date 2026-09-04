@@ -159,10 +159,56 @@ These fixes must be completed before exposing the API outside a trusted local de
 ### FIX NOW 10. Resolve worker ownership and deployment boundaries — **PENDING**
 - Problem: backtests are processed by `BacktestExecutionWorker` hosted inside the API, while the separate `PortfolioAnalytics.Worker` project only runs a timer and does not consume jobs. This creates an architectural mismatch and can lead to deploying a worker that does no useful work.
 - Objective: make the asynchronous execution topology explicit and operationally correct.
-- Solution: choose one boundary for the MVP: either keep the hosted worker inside the API and document that the standalone worker is not used, or move consumption to the standalone worker and introduce a durable shared queue/storage mechanism.
-- Recommendation: keep the in-process bounded channel only for local MVP use; before scaling to multiple API instances, move jobs and run state to durable shared infrastructure.
+- Solution: keep the hosted worker inside the API for the MVP and document the standalone worker as future work. Do not introduce a durable queue until multiple API instances or restart recovery are real requirements.
+- Recommendation: remove or archive the unused standalone worker project if it continues to provide no MVP value; revisit a separate worker only together with durable shared storage.
 - Where: `src/PortfolioAnalytics.Api/Backtesting/BacktestExecutionWorker.cs`, `src/PortfolioAnalytics.Worker/Worker.cs`, both project startup files, and `ARCHITECTURE.md`.
-- Validation: document and test the selected deployment mode, including restart behavior and what happens to queued/running jobs.
+- Validation: document the selected deployment mode and verify that queued/running jobs are explicitly considered lost on process restart.
+
+## SIMPLIFY - code quality and scope control
+
+These tasks come from a code review focused on keeping the MVP small, readable, and scalable without adding abstractions that do not solve an immediate problem.
+
+### SIMPLIFY 1. Replace message-based exception mapping with typed application errors — **PENDING**
+- Problem: `ApiExceptionMiddleware` infers HTTP status codes by searching exception messages. Renaming a message, changing its language, or reusing an exception can change the HTTP contract accidentally.
+- Simple solution: introduce only the few typed errors currently needed (`Validation`, `Conflict`, `NotFound`, and authentication failure) and map them directly in the middleware. Do not add a general result framework or a generic error hierarchy.
+- Recommendation: keep domain exceptions independent of HTTP and make the API layer responsible for translating application errors into Problem Details.
+- Validation: add one test per error type and confirm that messages can change without changing the status code.
+
+### SIMPLIFY 2. Keep one source of truth for backtest ownership — **PENDING**
+- Problem: the backtest owner is carried both by `BacktestWorkItem.UserId` and by `RunBacktestCommand.UserId`, creating duplicated state that can diverge.
+- Simple solution: keep `UserId` in the command and let the work item contain only the run identifier and command.
+- Recommendation: avoid compatibility constructors that preserve obsolete shapes unless an active caller needs them.
+- Validation: compile all callers and add a test proving the queued command carries the authenticated owner.
+
+### SIMPLIFY 3. Align async naming with actual behavior — **PENDING**
+- Problem: some controller methods end in `Async` but return an immediate `ActionResult`, while in-memory repositories return completed tasks without performing I/O.
+- Simple solution: rename synchronous controller methods to `GetRecent`/`GetById`; keep repository async interfaces only as a deliberate compatibility boundary for the future database implementation.
+- Recommendation: do not add `async`/`await` merely to satisfy naming conventions.
+- Validation: verify route behavior is unchanged and no caller depends on the misleading method names.
+
+### SIMPLIFY 4. Make queue configuration communicate its real policy — **PENDING**
+- Problem: the bounded channel is configured with `FullMode.Wait` but uses `TryWrite` and rejects immediately when full.
+- Simple solution: use a configuration that clearly represents immediate rejection, or centralize the policy in one small queue abstraction without adding a messaging framework.
+- Recommendation: preserve `503 Service Unavailable` for overload and document that the MVP queue is process-local.
+- Validation: test normal enqueue, full queue, cancellation, and worker shutdown.
+
+### SIMPLIFY 5. Add explicit request limits before optimizing allocations — **PENDING**
+- Problem: market-data batches and backtest ranges have no explicit size limits, so memory and CPU usage are controlled only indirectly.
+- Simple solution: add a small strongly typed options object with maximum points, symbol/source lengths, and date range; validate at the API boundary.
+- Recommendation: do not optimize collection allocations until safe operational limits exist.
+- Validation: test values at, below, and above each limit and preserve the existing Problem Details contract.
+
+### SIMPLIFY 6. Prefer a direct PostgreSQL migration over more in-memory concurrency layers — **PENDING**
+- Problem: locks, concurrent dictionaries, snapshots, and compare-and-swap logic make the temporary store increasingly complex.
+- Simple solution: keep the current protections stable, but make PostgreSQL + EF Core the next persistence milestone instead of adding more custom in-memory behavior.
+- Recommendation: use database transactions and unique indexes for durable invariants; avoid introducing Unit of Work, generic repositories, or CQRS frameworks without a concrete use case.
+- Validation: define the minimum schema and migrate one repository at a time with focused integration tests.
+
+### SIMPLIFY 7. Keep testing proportional to the MVP — **PENDING**
+- Problem: the backlog points directly to Testcontainers, property-based tests, golden files, and full end-to-end infrastructure, which may delay useful product progress.
+- Simple solution: start with focused xUnit domain/use-case tests and a small PostgreSQL integration smoke test using the existing Docker Compose database.
+- Recommendation: add Testcontainers, property-based tests, or full end-to-end suites only after a concrete regression or deployment need appears.
+- Validation: cover critical authorization, persistence, financial calculation, and HTTP contract paths without creating a new test framework or test platform.
 
 ## What comes after the MVP: product, technical, and integration improvements
 
@@ -213,7 +259,7 @@ Once the project is already useful and stable, the remaining work shifts from "b
 - Where: project root and `docker/`
 - Impact: local development, tests, and deployment.
 - Status: completed. Added `docker-compose.yml`, `.env.example`, persistent storage, healthcheck, and README instructions. Runtime startup remains to be verified once Docker Desktop's Linux engine is running.
-- Future improvements: add Redis, pgAdmin, observability, and seed scripts.
+- Future improvements: add only the next tool justified by a concrete workflow; Redis, pgAdmin, observability, and seed scripts are not MVP requirements.
 
 ### 4. Implement JWT authentication — **DONE**
 - Objective: protect user, portfolio, and result endpoints.
@@ -253,7 +299,7 @@ Once the project is already useful and stable, the remaining work shifts from "b
 - How: start with a simple SMA crossover or buy-and-hold strategy with configurable parameters.
 - Where: `src/PortfolioAnalytics.Domain/`, `src/PortfolioAnalytics.Application/Services/`, `src/PortfolioAnalytics.Worker/`
 - Impact: the system’s ability to deliver performance analysis.
-- Future improvements: include rebalancing strategies, momentum, mean reversion, parameter optimization, and multi-asset backtests.
+- Future improvements: add one additional strategy only after the first user workflow needs it; defer parameter optimization and multi-asset backtests.
 
 ### 9. Run backtests in the background — **DONE**
 - Objective: prevent the API from blocking when a heavy calculation is executed.
@@ -262,7 +308,7 @@ Once the project is already useful and stable, the remaining work shifts from "b
 - Where: `src/PortfolioAnalytics.Api/`, `src/PortfolioAnalytics.Worker/`, `src/PortfolioAnalytics.Infrastructure/BackgroundJobs/`
 - Impact: user experience and API scalability.
 - Status: completed for the MVP. Backtest requests now return `202 Accepted`, are processed by an in-memory background service, and expose queued, running, completed, or failed status through the existing retrieval endpoint.
-- Future improvements: job queues, retries, cancellation, event-driven processing, and external job storage.
+- Future improvements: durable job storage or retries only when restart recovery or production workload requires them; defer event-driven processing.
 
 ### 10. Save backtest results and key metrics — **DONE**
 - Objective: persist results for later comparison.
@@ -310,10 +356,10 @@ Once the project is already useful and stable, the remaining work shifts from "b
 ### 15. Implement integration tests with real PostgreSQL — **IN QUEUE**
 - Objective: ensure the database, repositories, and API work together correctly.
 - Owner: backend.
-- How: use Testcontainers to spin up PostgreSQL during CI.
-- Where: `tests/PortfolioAnalytics.IntegrationTests/`
+- How: start with a small smoke-test suite against the PostgreSQL instance already defined in Docker Compose. Introduce Testcontainers only if CI isolation becomes necessary.
+- Where: `tests/PortfolioAnalytics.IntegrationTests/` or the existing test project until the suite justifies a split.
 - Impact: confidence in real deployment behavior.
-- Future improvements: end-to-end API validation and CI pipelines for migration checks.
+- Future improvements: end-to-end API validation and CI migration checks when deployment complexity justifies them.
 
 ### 16. Improve deployment and environment readiness — **IN QUEUE**
 - Objective: move beyond local-only development.
@@ -326,12 +372,12 @@ Once the project is already useful and stable, the remaining work shifts from "b
 ## P2 - Scale and resilience
 
 ### 17. Introduce asynchronous processing and queueing — **IN QUEUE**
-- Objective: support heavier workloads without blocking the API.
+- Objective: consolidate and document the already implemented MVP background processing instead of creating a second queue architecture.
 - Owner: backend + worker.
-- How: standardize job execution and queue handling for slow calculations.
+- How: keep the existing API-hosted bounded channel and worker; migrate to a durable queue only when a concrete multi-instance or restart-recovery requirement exists.
 - Where: worker, infrastructure, and background processing modules.
 - Impact: performance and scalability.
-- Future improvements: retries, dead-letter queues, job cancellation, and metrics collection.
+- Future improvements: add retries or dead-letter handling only after durable jobs are introduced and failure semantics are defined.
 
 ### 18. Add real market-data integrations — **IN QUEUE**
 - Objective: move from local test data to provider-backed market feeds.
