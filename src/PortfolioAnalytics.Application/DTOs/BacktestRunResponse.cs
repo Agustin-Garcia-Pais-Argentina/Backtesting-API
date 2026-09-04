@@ -6,6 +6,7 @@ namespace PortfolioAnalytics.Application.DTOs;
 public sealed record BacktestRunResponse
 {
     public Guid Id { get; init; }
+    public Guid UserId { get; init; }
     public string Symbol { get; init; } = string.Empty;
     public DateOnly StartDate { get; init; }
     public DateOnly EndDate { get; init; }

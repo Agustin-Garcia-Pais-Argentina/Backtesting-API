@@ -29,7 +29,7 @@ public sealed class BacktestExecutionWorker : BackgroundService
     {
         await foreach (var workItem in _queue.ReadAllAsync(stoppingToken))
         {
-            var currentRun = _store.GetById(workItem.RunId);
+            var currentRun = _store.GetById(workItem.RunId, workItem.UserId);
             if (currentRun is null)
             {
                 _logger.LogWarning("Queued backtest {RunId} was not found.", workItem.RunId);

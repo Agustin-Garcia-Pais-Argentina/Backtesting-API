@@ -137,7 +137,7 @@ public class MvpBacktestingTests
         var handler = new RunBacktestHandler(repository, service);
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            handler.HandleAsync(new RunBacktestCommand("AAPL", new DateOnly(2024, 1, 10), new DateOnly(2024, 1, 12), 10000m)));
+            handler.HandleAsync(new RunBacktestCommand(Guid.NewGuid(), "AAPL", new DateOnly(2024, 1, 10), new DateOnly(2024, 1, 12), 10000m)));
 
         Assert.Contains("No market data available", exception.Message);
     }
@@ -179,9 +179,11 @@ public class MvpBacktestingTests
     public void BacktestExecutionStore_ShouldKeepCompletedMetricsForLaterRetrieval()
     {
         var store = new BacktestExecutionStore();
+        var userId = Guid.NewGuid();
         var run = new BacktestRunResponse
         {
             Id = Guid.NewGuid(),
+            UserId = userId,
             Symbol = "AAPL",
             Status = "Queued"
         };
@@ -196,7 +198,7 @@ public class MvpBacktestingTests
             CompletedAt = DateTime.UtcNow
         });
 
-        var result = store.GetById(run.Id);
+        var result = store.GetById(run.Id, userId);
 
         Assert.True(updated);
         Assert.NotNull(result);
@@ -204,5 +206,83 @@ public class MvpBacktestingTests
         Assert.Equal(0.15m, result.TotalReturn);
         Assert.Equal(1, result.TradeCount);
         Assert.NotNull(result.CompletedAt);
+    }
+
+    [Fact]
+    public void BacktestExecutionStore_ShouldHideRunOwnedByAnotherUser()
+    {
+        var store = new BacktestExecutionStore();
+        var ownerId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var run = new BacktestRunResponse
+        {
+            Id = Guid.NewGuid(),
+            UserId = ownerId,
+            Status = "Completed"
+        };
+
+        store.Save(run);
+
+        Assert.Null(store.GetById(run.Id, otherUserId));
+        Assert.Single(store.GetRecent(ownerId));
+        Assert.Empty(store.GetRecent(otherUserId));
+    }
+
+    [Fact]
+    public void BacktestExecutionStore_ShouldReturnAllStatusesOnlyForTheOwner()
+    {
+        var store = new BacktestExecutionStore();
+        var ownerId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var statuses = new[] { "Queued", "Running", "Completed", "Failed" };
+        var runs = new List<BacktestRunResponse>();
+
+        foreach (var status in statuses)
+        {
+            var run = new BacktestRunResponse
+            {
+                Id = Guid.NewGuid(),
+                UserId = ownerId,
+                Status = status,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            runs.Add(run);
+            store.Save(run);
+        }
+
+        store.Save(new BacktestRunResponse
+        {
+            Id = Guid.NewGuid(),
+            UserId = otherUserId,
+            Status = "Completed"
+        });
+
+        var result = store.GetRecent(ownerId);
+
+        Assert.Equal(statuses.Length, result.Count);
+        Assert.All(result, run => Assert.Equal(ownerId, run.UserId));
+        Assert.DoesNotContain(result, run => run.UserId == otherUserId);
+        Assert.All(runs, run =>
+        {
+            Assert.Same(run, store.GetById(run.Id, ownerId));
+            Assert.Null(store.GetById(run.Id, otherUserId));
+        });
+    }
+
+    [Fact]
+    public void BacktestWorkItem_ShouldCarryAuthenticatedOwner()
+    {
+        var userId = Guid.NewGuid();
+        var command = new RunBacktestCommand(
+            userId,
+            "AAPL",
+            new DateOnly(2024, 1, 1),
+            new DateOnly(2024, 1, 2));
+
+        var workItem = new BacktestWorkItem(Guid.NewGuid(), userId, command);
+
+        Assert.Equal(userId, workItem.UserId);
+        Assert.Equal(userId, workItem.Command.UserId);
     }
 }
