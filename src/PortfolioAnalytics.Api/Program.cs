@@ -14,6 +14,11 @@ using PortfolioAnalytics.Infrastructure.Repositories;
 // It wires together the infrastructure implementations, the application handlers, and the HTTP pipeline.
 var builder = WebApplication.CreateBuilder(args);
 
+// Validate security settings before registering the authentication pipeline. A known
+// development key is allowed only for local development; other environments must
+// provide their own sufficiently long secret through configuration.
+var jwtSettings = JwtSettings.Load(builder.Configuration, builder.Environment);
+
 // Composition root: here we decide which concrete implementations are used.
 // This is the point where the API connects the infrastructure with the application layer.
 builder.Services.AddControllers();
@@ -33,6 +38,7 @@ builder.Services.AddSingleton<InMemoryMarketDataRepository>();
 builder.Services.AddSingleton<IMarketDataRepository>(serviceProvider => serviceProvider.GetRequiredService<InMemoryMarketDataRepository>());
 
 builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 
 builder.Services.AddSingleton<CreatePortfolioHandler>();
@@ -50,10 +56,6 @@ builder.Services.AddHostedService<BacktestExecutionWorker>();
 
 // JWT configuration: the API validates the token on every protected request.
 // This is how we know which user is calling the endpoint.
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "ThisIsATestKeyForLocalDevelopmentOnly_1234567890";
-var issuer = builder.Configuration["Jwt:Issuer"] ?? "PortfolioAnalytics";
-var audience = builder.Configuration["Jwt:Audience"] ?? "PortfolioAnalyticsUsers";
-
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -63,9 +65,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = issuer,
-            ValidAudience = audience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
             ClockSkew = TimeSpan.Zero
         };
     });

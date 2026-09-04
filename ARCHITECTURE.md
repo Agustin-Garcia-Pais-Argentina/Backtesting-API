@@ -234,6 +234,17 @@ Backtest runs are isolated by the authenticated user's `ClaimTypes.NameIdentifie
 ### Domain first
 The most important rules live in entities and domain validations before they appear in controllers or infrastructure services.
 
+### JWT configuration boundary
+JWT settings are loaded and validated once by the API composition root through
+`Infrastructure.Identity.JwtSettings`. The Development environment has a clearly
+development-only fallback to keep the local MVP easy to run. All other environments
+fail during startup when `Jwt:Key` is missing or shorter than 32 characters, so a
+publicly known signing key cannot be used accidentally. Deployments provide
+`Jwt__Key`, `Jwt__Issuer`, and `Jwt__Audience` through configuration or environment
+variables; the secret is never logged. `JwtTokenService` receives the same validated
+settings instance used by token validation, preventing signing and validation from
+drifting apart.
+
 ## 8. Evolution path
 
 The next maturity step for the project points toward:
