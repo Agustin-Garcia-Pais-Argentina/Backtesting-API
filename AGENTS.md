@@ -83,6 +83,16 @@ The recommended order is:
 - Add a brief file-level description at the top of each file explaining its purpose.
 - Keep documentation current whenever an important architectural or workflow change alters project context.
 
+### 3.7. Apply .NET best practices within the project context
+- Treat security configuration as fail-fast: never rely on known secrets or permissive production fallbacks.
+- Use strongly typed options and startup validation for security-sensitive and operational settings such as JWT, queue capacity, payload limits, and rate limits.
+- Use constructor injection with explicit null validation where dependencies can be supplied outside the default DI container, and choose service lifetimes deliberately. Singleton services must be thread-safe.
+- Propagate `CancellationToken` through asynchronous I/O and background work. Avoid unbounded queues and define behavior for cancellation, overload, retries, and shutdown.
+- Keep public API contracts explicit: validate payload size and domain invariants, use invariant parsing for machine-readable values, return consistent Problem Details responses, and authorize access to resources by owner.
+- Prefer interfaces at application boundaries when they improve testability; do not introduce abstractions, factories, generic handler bases, or localization infrastructure without a concrete product or maintenance need.
+- Document public types and members when they form part of a reusable or external contract. Do not add comments that merely restate the code.
+- Continue using the test framework already adopted by the solution (xUnit) unless a deliberate migration is approved; tests must cover security boundaries, concurrency, cancellation, and HTTP contract behavior.
+
 ## 4. Code rules
 
 ### 4.1. Keep improvements minimal and precise

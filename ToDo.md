@@ -128,6 +128,38 @@ These fixes must be completed before exposing the API outside a trusted local de
 - Where: `src/PortfolioAnalytics.Api/Controllers/MarketDataController.cs` and API contract tests.
 - Validation: cover equal dates, a valid ascending range, and a reversed range.
 
+### FIX NOW 7. Add bounded HTTP payload and workload limits — **PENDING**
+- Problem: market-data ingestion accepts an unbounded enumerable, and backtest requests do not limit the date range or the amount of pending work. An authenticated client could consume excessive memory or CPU even without exploiting a lower-level vulnerability.
+- Objective: keep request processing and background workload within explicit MVP operating limits.
+- Solution: define maximum market-data points per request, maximum symbol/source lengths, maximum backtest date range, and maximum pending jobs. Reject invalid sizes with the standard `400 Bad Request` problem-details response and use overload protection for the queue.
+- Recommendation: configure limits through strongly typed options instead of hardcoding them in controllers, document the values in Swagger/README, and add rate limiting before exposing the API publicly.
+- Where: `src/PortfolioAnalytics.Api/Controllers/MarketDataController.cs`, `src/PortfolioAnalytics.Api/Controllers/BacktestsController.cs`, request DTOs, queue configuration, and API configuration.
+- Validation: test requests at the boundary, just above the boundary, and queue saturation behavior.
+
+### FIX NOW 8. Enforce invariant ISO date parsing in market-data queries — **PENDING**
+- Problem: the API error message promises `yyyy-MM-dd`, but `DateOnly.TryParse` uses culture-sensitive parsing. The same request can therefore be interpreted differently depending on the server culture.
+- Objective: make the HTTP date contract deterministic across environments.
+- Solution: parse `from` and `to` with `DateOnly.TryParseExact`, `yyyy-MM-dd`, and `CultureInfo.InvariantCulture`, then keep the existing range validation.
+- Recommendation: publish the exact format in the OpenAPI schema and cover malformed, culture-sensitive, equal, ascending, and reversed ranges in contract tests.
+- Where: `src/PortfolioAnalytics.Api/Controllers/MarketDataController.cs` and API contract tests.
+- Validation: run the same requests under at least two cultures and confirm identical results.
+
+### FIX NOW 9. Make user registration uniqueness atomic — **PENDING**
+- Problem: registration performs a check-then-insert sequence. Concurrent requests for the same email can both pass the duplicate check; the in-memory dictionaries are also not safe for concurrent access.
+- Objective: guarantee one account per normalized email under concurrent requests.
+- Solution: enforce uniqueness in the persistence layer and expose a conflict result mapped to `409 Conflict`. For the temporary in-memory implementation, make the compound operation atomic and normalize the email consistently before lookup and storage.
+- Recommendation: preserve the same invariant with a unique database index when PostgreSQL is introduced; add a concurrent registration test.
+- Where: `src/PortfolioAnalytics.Application/Handlers/RegisterUserHandler.cs`, `src/PortfolioAnalytics.Infrastructure/Repositories/InMemoryUserRepository.cs`, and the future EF Core user mapping.
+- Validation: execute concurrent registrations with the same email and verify exactly one succeeds.
+
+### FIX NOW 10. Resolve worker ownership and deployment boundaries — **PENDING**
+- Problem: backtests are processed by `BacktestExecutionWorker` hosted inside the API, while the separate `PortfolioAnalytics.Worker` project only runs a timer and does not consume jobs. This creates an architectural mismatch and can lead to deploying a worker that does no useful work.
+- Objective: make the asynchronous execution topology explicit and operationally correct.
+- Solution: choose one boundary for the MVP: either keep the hosted worker inside the API and document that the standalone worker is not used, or move consumption to the standalone worker and introduce a durable shared queue/storage mechanism.
+- Recommendation: keep the in-process bounded channel only for local MVP use; before scaling to multiple API instances, move jobs and run state to durable shared infrastructure.
+- Where: `src/PortfolioAnalytics.Api/Backtesting/BacktestExecutionWorker.cs`, `src/PortfolioAnalytics.Worker/Worker.cs`, both project startup files, and `ARCHITECTURE.md`.
+- Validation: document and test the selected deployment mode, including restart behavior and what happens to queued/running jobs.
+
 ## What comes after the MVP: product, technical, and integration improvements
 
 Once the project is already useful and stable, the remaining work shifts from "basic functionality" to "scaling and quality".
