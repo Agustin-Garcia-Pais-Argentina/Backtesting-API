@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## Regla de trabajo para este proyecto
+
+Este es un proyecto de un solo desarrollador. No planificar ni documentar como si fuera un equipo grande: nada de fases P0/P1/P2 paralelas, nada de checklists con Objective/Scope/Design/Validation/Acceptance Criteria por ítem, nada de dividir un cambio en 5 tareas cuando toca los mismos archivos. Priorizar siempre: (1) un único producto funcional de punta a punta, (2) sobre eso, deuda técnica que bloquea lo próximo, (3) recién después, features nuevas, una por vez. Ante la duda entre arquitectura teóricamente correcta y algo que funciona y se puede mostrar, elegir lo segundo y dejar la mejora documentada en una sola línea, no en una sección nueva. Si una sugerencia generaría más de un PR por tarea pedida, es señal de sobreingeniería: replantear en un solo PR o explicar explícitamente por qué no se puede evitar.
+
 This file defines the rules for planning and code creation in this project.
 
 ## 1. General project purpose
