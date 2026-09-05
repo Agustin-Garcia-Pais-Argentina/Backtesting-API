@@ -44,6 +44,7 @@ public sealed class BacktestExecutionWorkerTests
             new DateOnly(2024, 1, 1),
             new DateOnly(2024, 1, 2),
             10_000m);
+            command = command with { RunId = runId};
         var store = new BacktestExecutionStore();
         store.Save(new BacktestRunResponse
         {
@@ -57,7 +58,7 @@ public sealed class BacktestExecutionWorkerTests
         await queue.EnqueueAsync(new BacktestWorkItem(runId, userId, command));
         var worker = new BacktestExecutionWorker(
             queue,
-            new RunBacktestHandler(repository, new BacktestService()),
+            new RunBacktestHandler(repository, new PortfolioAnalytics.Domain.Services.BacktestCalculator()),
             store,
             NullLogger<BacktestExecutionWorker>.Instance);
 

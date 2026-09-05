@@ -41,7 +41,6 @@ public sealed class BacktestExecutionWorker : BackgroundService
             try
             {
                 var metrics = await _handler.HandleAsync(workItem.Command, stoppingToken);
-
                 _store.Update(workItem.RunId, run => run with
                 {
                     Status = "Completed",

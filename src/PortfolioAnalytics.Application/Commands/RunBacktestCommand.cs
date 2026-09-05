@@ -11,6 +11,8 @@ public sealed record RunBacktestCommand(
     DateOnly EndDate,
     decimal InitialCash = 10000m)
 {
+    public Guid RunId { get; init; }
+
     // Keep the previous constructor available for application-level callers that do not
     // originate from an authenticated HTTP request. API requests use the owner-aware form.
     public RunBacktestCommand(

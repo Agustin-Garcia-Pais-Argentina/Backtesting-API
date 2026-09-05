@@ -7,6 +7,7 @@ using PortfolioAnalytics.Application.Abstractions;
 using PortfolioAnalytics.Application.Handlers;
 using PortfolioAnalytics.Application.Services;
 using PortfolioAnalytics.Domain.Interfaces;
+using PortfolioAnalytics.Domain.Services;
 using PortfolioAnalytics.Infrastructure.Identity;
 using PortfolioAnalytics.Infrastructure.Repositories;
 
@@ -48,7 +49,7 @@ builder.Services.AddSingleton<RegisterUserHandler>();
 builder.Services.AddSingleton<LoginUserHandler>();
 builder.Services.AddSingleton<SyncMarketDataHandler>();
 builder.Services.AddSingleton<GetMarketDataBySymbolHandler>();
-builder.Services.AddSingleton<BacktestService>();
+builder.Services.AddSingleton<BacktestCalculator>();
 builder.Services.AddSingleton<BacktestExecutionStore>();
 builder.Services.AddSingleton<BacktestExecutionQueue>();
 builder.Services.AddSingleton<RunBacktestHandler>();

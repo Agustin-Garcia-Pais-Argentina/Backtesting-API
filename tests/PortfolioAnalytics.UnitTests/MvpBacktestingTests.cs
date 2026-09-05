@@ -5,6 +5,7 @@ using PortfolioAnalytics.Application.Queries;
 using PortfolioAnalytics.Application.Services;
 using PortfolioAnalytics.Domain.Entities;
 using PortfolioAnalytics.Domain.Enums;
+using PortfolioAnalytics.Domain.Services;
 using PortfolioAnalytics.Infrastructure.Identity;
 using PortfolioAnalytics.Infrastructure.Repositories;
 
@@ -112,9 +113,9 @@ public class MvpBacktestingTests
     }
 
     [Fact]
-    public void BacktestService_ShouldComputeBuyAndHoldMetrics()
+    public void BacktestCalculator_ShouldComputeBuyAndHoldMetrics()
     {
-        var service = new BacktestService();
+        var calculator = new BacktestCalculator();
         var points = new[]
         {
             new MarketDataPoint("AAPL", new DateOnly(2024, 1, 1), 100m, 102m, 98m, 100m, 1000m, "sample"),
@@ -122,7 +123,7 @@ public class MvpBacktestingTests
             new MarketDataPoint("AAPL", new DateOnly(2024, 1, 3), 103m, 108m, 102m, 108m, 1200m, "sample")
         };
 
-        var result = service.RunBuyAndHold(points, 10000m);
+        var result = calculator.EvaluateBuyAndHold(Guid.NewGuid(), points, 10000m);
 
         Assert.Equal(1, result.TradeCount);
         Assert.InRange(result.TotalReturn, 0.07m, 0.09m);
@@ -133,8 +134,8 @@ public class MvpBacktestingTests
     public async Task RunBacktestHandler_ShouldRejectEmptySeries()
     {
         var repository = new InMemoryMarketDataRepository();
-        var service = new BacktestService();
-        var handler = new RunBacktestHandler(repository, service);
+        var calculator = new BacktestCalculator();
+        var handler = new RunBacktestHandler(repository, new BacktestCalculator());
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             handler.HandleAsync(new RunBacktestCommand(Guid.NewGuid(), "AAPL", new DateOnly(2024, 1, 10), new DateOnly(2024, 1, 12), 10000m)));

@@ -77,7 +77,7 @@ public sealed class BacktestsController : ControllerBase
                 new BacktestWorkItem(
                     response.Id,
                     currentUserId,
-                    new RunBacktestCommand(currentUserId, request.Symbol, request.StartDate, request.EndDate, request.InitialCapital)),
+                    new RunBacktestCommand(currentUserId, request.Symbol, request.StartDate, request.EndDate, request.InitialCapital){ RunId = response.Id }),
                 cancellationToken);
         }
         catch (BacktestQueueFullException)
